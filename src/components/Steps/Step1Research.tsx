@@ -61,21 +61,21 @@ const Step1Research: React.FC = () => {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-heading font-bold text-gray-900 mb-4">
+        <h1 className="text-3xl font-heading font-bold text-text-primary mb-4">
           Discover Viral Content Ideas
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className="text-lg text-text-secondary max-w-2xl mx-auto">
           Find trending topics in the Make Money Online and Business Operations niche 
           from Reddit and authoritative blogs.
         </p>
       </div>
 
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="card mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           {/* API Selection */}
           <div className="flex items-center space-x-3">
-            <label className="text-sm font-medium text-gray-700">AI Provider:</label>
+            <label className="text-sm font-medium text-text-primary">AI Provider:</label>
             <select
               value={selectedAPI.id}
               onChange={(e) => {
@@ -125,10 +125,10 @@ const Step1Research: React.FC = () => {
       {!isLoading && contentIdeas.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-text-primary">
               Found {contentIdeas.length} Trending Ideas
             </h2>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-text-tertiary">
               Click on an idea to continue
             </div>
           </div>
@@ -137,15 +137,15 @@ const Step1Research: React.FC = () => {
             {contentIdeas.map((idea) => (
               <div
                 key={idea.id}
-                className={`card cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary-200 ${
-                  selectedIdea?.id === idea.id ? 'ring-2 ring-primary-500 border-primary-300' : ''
+                className={`card cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary-200 dark:hover:border-primary-700 ${
+                  selectedIdea?.id === idea.id ? 'ring-2 ring-primary-500 border-primary-300 dark:border-primary-600' : ''
                 }`}
                 onClick={() => handleSelectIdea(idea)}
               >
                 {/* Source Badge */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-1 text-xs text-gray-500">
+                    <div className="flex items-center space-x-1 text-xs text-text-tertiary">
                       <Globe className="w-3 h-3" />
                       <span className="font-medium">{idea.source}</span>
                     </div>
@@ -156,19 +156,19 @@ const Step1Research: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-text-tertiary">
                     <Calendar className="w-3 h-3 inline mr-1" />
                     {new Date(idea.createdAt).toLocaleDateString()}
                   </div>
                 </div>
 
                 {/* Title */}
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                <h3 className="font-semibold text-text-primary mb-2 line-clamp-2">
                   {idea.title}
                 </h3>
 
                 {/* Snippet */}
-                <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                <p className="text-sm text-text-secondary mb-4 line-clamp-3">
                   {idea.snippet}
                 </p>
 
@@ -189,7 +189,7 @@ const Step1Research: React.FC = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-text-tertiary hover:text-text-secondary transition-colors"
                     title="View original"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -204,9 +204,9 @@ const Step1Research: React.FC = () => {
       {/* Empty State */}
       {!isLoading && contentIdeas.length === 0 && !error && (
         <div className="text-center py-12">
-          <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Ideas Found</h3>
-          <p className="text-gray-600 mb-6">
+          <Search className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-text-primary mb-2">No Ideas Found</h3>
+          <p className="text-text-secondary mb-6">
             We couldn't find any content ideas at the moment. Try refreshing to fetch new ideas.
           </p>
           <button

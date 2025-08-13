@@ -30,7 +30,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-bg-secondary to-secondary-50 dark:from-gray-900 dark:via-bg-primary dark:to-gray-800 flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -38,30 +38,30 @@ const Login: React.FC = () => {
             <img 
               src="/logo black.png" 
               alt="ReelWriterAI" 
-              className="h-12 w-auto"
+              className="h-12 w-auto dark:invert"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
-            <div className="text-2xl font-heading font-bold text-gray-900">
+            <div className="text-2xl font-heading font-bold text-text-primary">
               ReelWriterAI
             </div>
           </div>
           
-          <h2 className="text-3xl font-heading font-bold text-gray-900 mb-2">
+          <h2 className="text-3xl font-heading font-bold text-text-primary mb-2">
             Welcome Back
           </h2>
-          <p className="text-gray-600">
+          <p className="text-text-secondary">
             Sign in to create viral short-form video content
           </p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+        <div className="bg-bg-secondary rounded-2xl shadow-xl border border-border-primary p-8 dark:shadow-gray-900/20">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Username Field */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-text-primary mb-2">
                 Username
               </label>
               <input
@@ -78,7 +78,7 @@ const Login: React.FC = () => {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-2">
                 Password
               </label>
               <div className="relative">
@@ -95,7 +95,7 @@ const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-tertiary hover:text-text-secondary transition-colors"
                   disabled={isLoading}
                 >
                   {showPassword ? (
@@ -134,9 +134,9 @@ const Login: React.FC = () => {
           </form>
 
           {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Demo Credentials:</h4>
-            <div className="text-sm text-gray-600 space-y-1">
+          <div className="mt-6 p-4 bg-bg-tertiary rounded-lg">
+            <h4 className="text-sm font-medium text-text-primary mb-2">Demo Credentials:</h4>
+            <div className="text-sm text-text-secondary space-y-1">
               <div><strong>Username:</strong> tahmid</div>
               <div><strong>Password:</strong> t112233</div>
             </div>
@@ -145,7 +145,7 @@ const Login: React.FC = () => {
 
         {/* Features */}
         <div className="text-center">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-600">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-text-secondary">
             <div className="flex items-center justify-center space-x-2">
               <Zap className="w-4 h-4 text-primary-600" />
               <span>AI-Powered</span>

@@ -147,21 +147,21 @@ Generated with ReelWriterAI
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-heading font-bold text-gray-900 mb-4">
+        <h1 className="text-3xl font-heading font-bold text-text-primary mb-4">
           Social Media Captions
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className="text-lg text-text-secondary max-w-2xl mx-auto">
           Generate optimized captions and titles for Instagram, LinkedIn, and YouTube based on your script.
         </p>
       </div>
 
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="card mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <MessageSquare className="w-5 h-5 text-primary-600" />
-            <span className="font-medium text-gray-900">Caption Generation</span>
-            <span className="text-sm text-gray-500">Using {selectedAPI.name}</span>
+            <span className="font-medium text-text-primary">Caption Generation</span>
+            <span className="text-sm text-text-tertiary">Using {selectedAPI.name}</span>
           </div>
           
           <div className="flex items-center space-x-3">

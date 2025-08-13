@@ -4,48 +4,155 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
 
+/* CSS Variables for Theme Colors */
+:root {
+  /* Light theme colors */
+  --color-bg-primary: 249 250 251; /* gray-50 */
+  --color-bg-secondary: 255 255 255; /* white */
+  --color-bg-tertiary: 243 244 246; /* gray-100 */
+  --color-text-primary: 17 24 39; /* gray-900 */
+  --color-text-secondary: 75 85 99; /* gray-600 */
+  --color-text-tertiary: 156 163 175; /* gray-400 */
+  --color-border-primary: 229 231 235; /* gray-200 */
+  --color-border-secondary: 209 213 219; /* gray-300 */
+  
+  /* Primary colors */
+  --color-primary-50: 240 249 255;
+  --color-primary-100: 224 242 254;
+  --color-primary-200: 186 230 253;
+  --color-primary-300: 125 211 252;
+  --color-primary-400: 56 189 248;
+  --color-primary-500: 14 165 233;
+  --color-primary-600: 2 132 199;
+  --color-primary-700: 3 105 161;
+  --color-primary-800: 7 89 133;
+  --color-primary-900: 12 74 110;
+  
+  /* Success colors */
+  --color-success-50: 240 253 244;
+  --color-success-100: 220 252 231;
+  --color-success-200: 187 247 208;
+  --color-success-300: 134 239 172;
+  --color-success-400: 74 222 128;
+  --color-success-500: 34 197 94;
+  --color-success-600: 22 163 74;
+  --color-success-700: 21 128 61;
+  --color-success-800: 22 101 52;
+  --color-success-900: 20 83 45;
+  
+  /* Warning colors */
+  --color-warning-50: 255 251 235;
+  --color-warning-100: 254 243 199;
+  --color-warning-200: 253 230 138;
+  --color-warning-300: 252 211 77;
+  --color-warning-400: 251 191 36;
+  --color-warning-500: 245 158 11;
+  --color-warning-600: 217 119 6;
+  --color-warning-700: 180 83 9;
+  --color-warning-800: 146 64 14;
+  --color-warning-900: 120 53 15;
+  
+  /* Error colors */
+  --color-error-50: 254 242 242;
+  --color-error-100: 254 226 226;
+  --color-error-200: 252 202 202;
+  --color-error-300: 252 165 165;
+  --color-error-400: 248 113 113;
+  --color-error-500: 239 68 68;
+  --color-error-600: 220 38 38;
+  --color-error-700: 185 28 28;
+  --color-error-800: 153 27 27;
+  --color-error-900: 127 29 29;
+}
+
+/* Dark theme colors */
+.dark {
+  --color-bg-primary: 17 24 39; /* gray-900 */
+  --color-bg-secondary: 31 41 55; /* gray-800 */
+  --color-bg-tertiary: 55 65 81; /* gray-700 */
+  --color-text-primary: 249 250 251; /* gray-50 */
+  --color-text-secondary: 209 213 219; /* gray-300 */
+  --color-text-tertiary: 156 163 175; /* gray-400 */
+  --color-border-primary: 75 85 99; /* gray-600 */
+  --color-border-secondary: 107 114 128; /* gray-500 */
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* Disable transitions during theme change to prevent flash */
+.theme-transition-disable * {
+  transition: none !important;
+}
+
 @layer base {
   * {
     @apply border-border;
   }
   
   body {
-    @apply bg-gray-50 text-gray-900 font-sans;
+    @apply bg-bg-primary text-text-primary font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
   }
+  
+  /* Ensure proper contrast for focus indicators */
+  :focus {
+    outline: 2px solid rgb(var(--color-primary-500));
+    outline-offset: 2px;
+  }
+  
+  /* Custom scrollbar for dark mode */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-tertiary;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border-secondary rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-text-tertiary;
+  }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md;
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md dark:shadow-gray-900/20;
   }
   
   .btn-secondary {
-    @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500 border border-gray-300;
+    @apply btn bg-bg-tertiary text-text-primary hover:bg-border-primary focus:ring-primary-500 border border-border-primary;
   }
   
   .btn-success {
-    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500;
+    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500 dark:shadow-gray-900/20;
   }
   
   .btn-warning {
-    @apply btn bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500;
+    @apply btn bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500 dark:shadow-gray-900/20;
   }
   
   .btn-error {
-    @apply btn bg-error-600 text-white hover:bg-error-700 focus:ring-error-500;
+    @apply btn bg-error-600 text-white hover:bg-error-700 focus:ring-error-500 dark:shadow-gray-900/20;
   }
   
   .input {
-    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors;
+    @apply block w-full rounded-lg border border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors;
   }
   
   .textarea {
@@ -53,7 +160,7 @@
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow;
+    @apply bg-bg-secondary rounded-xl shadow-sm border border-border-primary p-6 hover:shadow-md transition-all duration-200 dark:shadow-gray-900/10 dark:hover:shadow-gray-900/20;
   }
   
   .step-indicator {
@@ -69,7 +176,44 @@
   }
   
   .step-indicator.inactive {
-    @apply bg-gray-200 text-gray-600;
+    @apply bg-bg-tertiary text-text-secondary;
+  }
+  
+  /* Custom background and text utilities using CSS variables */
+  .bg-bg-primary {
+    background-color: rgb(var(--color-bg-primary));
+  }
+  
+  .bg-bg-secondary {
+    background-color: rgb(var(--color-bg-secondary));
+  }
+  
+  .bg-bg-tertiary {
+    background-color: rgb(var(--color-bg-tertiary));
+  }
+  
+  .text-text-primary {
+    color: rgb(var(--color-text-primary));
+  }
+  
+  .text-text-secondary {
+    color: rgb(var(--color-text-secondary));
+  }
+  
+  .text-text-tertiary {
+    color: rgb(var(--color-text-tertiary));
+  }
+  
+  .border-border-primary {
+    border-color: rgb(var(--color-border-primary));
+  }
+  
+  .border-border-secondary {
+    border-color: rgb(var(--color-border-secondary));
+  }
+  
+  .placeholder-text-tertiary::placeholder {
+    color: rgb(var(--color-text-tertiary));
   }
 }
 
@@ -85,5 +229,24 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .btn {
+      @apply border-2;
+    }
+    
+    .card {
+      @apply border-2;
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
   }
 }

@@ -118,31 +118,31 @@ const Step2Hooks: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-heading font-bold text-gray-900 mb-4">
+        <h1 className="text-3xl font-heading font-bold text-text-primary mb-4">
           Generate Engaging Hooks
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className="text-lg text-text-secondary max-w-2xl mx-auto">
           Create powerful hooks that will stop viewers from scrolling and make them watch your entire video.
         </p>
       </div>
 
       {/* Selected Content Idea */}
-      <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mb-8">
-        <h3 className="font-semibold text-primary-900 mb-2">Selected Content Idea:</h3>
-        <p className="text-primary-800 font-medium mb-2">{selectedContentIdea.title}</p>
-        <p className="text-primary-700 text-sm">{selectedContentIdea.snippet}</p>
-        <div className="mt-3 text-xs text-primary-600">
+      <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mb-8 dark:bg-primary-900/20 dark:border-primary-800">
+        <h3 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">Selected Content Idea:</h3>
+        <p className="text-primary-800 dark:text-primary-200 font-medium mb-2">{selectedContentIdea.title}</p>
+        <p className="text-primary-700 dark:text-primary-300 text-sm">{selectedContentIdea.snippet}</p>
+        <div className="mt-3 text-xs text-primary-600 dark:text-primary-400">
           Source: {selectedContentIdea.source}
         </div>
       </div>
 
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="card mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Zap className="w-5 h-5 text-primary-600" />
-            <span className="font-medium text-gray-900">AI-Generated Hooks</span>
-            <span className="text-sm text-gray-500">Using {selectedAPI.name}</span>
+            <span className="font-medium text-text-primary">AI-Generated Hooks</span>
+            <span className="text-sm text-text-tertiary">Using {selectedAPI.name}</span>
           </div>
           
           <button

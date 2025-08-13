@@ -77,19 +77,19 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-heading font-bold text-gray-900 mb-4">
+        <h1 className="text-3xl font-heading font-bold text-text-primary mb-4">
           Content History
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className="text-lg text-text-secondary max-w-2xl mx-auto">
           View and manage all your previous content creation sessions. Sessions are automatically deleted after 7 days.
         </p>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="card mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" />
             <input
               type="text"
               placeholder="Search sessions..."
@@ -99,7 +99,7 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
             />
           </div>
           
-          <div className="flex items-center space-x-4 text-sm text-gray-600">
+          <div className="flex items-center space-x-4 text-sm text-text-secondary">
             <div className="flex items-center space-x-2">
               <HistoryIcon className="w-4 h-4" />
               <span>{filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''}</span>
@@ -118,7 +118,7 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
             return (
               <div
                 key={session.id}
-                className="card cursor-pointer hover:shadow-lg hover:border-primary-200 transition-all duration-200"
+                className="card cursor-pointer hover:shadow-lg hover:border-primary-200 dark:hover:border-primary-700 transition-all duration-200"
                 onClick={() => handleLoadSession(session)}
               >
                 <div className="flex items-start justify-between">
@@ -132,26 +132,26 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
                         </span>
                       </div>
                       
-                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                      <div className="flex items-center space-x-2 text-xs text-text-tertiary">
                         <Calendar className="w-3 h-3" />
                         <span>{formatDistanceToNow(new Date(session.createdAt), { addSuffix: true })}</span>
                       </div>
                     </div>
 
                     {/* Content */}
-                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                    <h3 className="font-semibold text-text-primary mb-2 line-clamp-2">
                       {session.contentIdea.title}
                     </h3>
                     
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-sm text-text-secondary mb-3 line-clamp-2">
                       {session.contentIdea.snippet}
                     </p>
 
                     {/* Selected Hook */}
                     {session.selectedHook && (
-                      <div className="bg-success-50 border border-success-200 rounded-lg p-3 mb-3">
-                        <div className="text-xs font-medium text-success-700 mb-1">Selected Hook:</div>
-                        <div className="text-sm text-success-800 font-medium">
+                      <div className="bg-success-50 border border-success-200 rounded-lg p-3 mb-3 dark:bg-success-900/20 dark:border-success-800">
+                        <div className="text-xs font-medium text-success-700 dark:text-success-300 mb-1">Selected Hook:</div>
+                        <div className="text-sm text-success-800 dark:text-success-200 font-medium">
                           "{session.selectedHook.content}"
                         </div>
                       </div>
@@ -159,11 +159,11 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
 
                     {/* Progress Bar */}
                     <div className="mb-3">
-                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                      <div className="flex items-center justify-between text-xs text-text-secondary mb-1">
                         <span>Progress</span>
                         <span>{Math.round(completionPercentage)}% complete</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-bg-tertiary rounded-full h-2">
                         <div
                           className="bg-primary-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${completionPercentage}%` }}
@@ -173,7 +173,7 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
 
                     {/* Metadata */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <div className="flex items-center space-x-4 text-xs text-text-tertiary">
                         <span>Source: {session.contentIdea.source}</span>
                         {session.script && (
                           <span>Script: {session.script.wordCount} words</span>
@@ -189,7 +189,7 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          className="text-text-tertiary hover:text-text-secondary transition-colors"
                           title="View original content"
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -197,7 +197,7 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
                         
                         <button
                           onClick={(e) => handleDeleteSession(session.id, e)}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          className="text-text-tertiary hover:text-red-600 transition-colors"
                           title="Delete session"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -213,11 +213,11 @@ const History: React.FC<HistoryProps> = ({ onNavigate }) => {
       ) : (
         /* Empty State */
         <div className="text-center py-12">
-          <HistoryIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <HistoryIcon className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-text-primary mb-2">
             {searchTerm ? 'No matching sessions found' : 'No content sessions yet'}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-text-secondary mb-6">
             {searchTerm 
               ? 'Try adjusting your search terms or clear the search to see all sessions.'
               : 'Start creating viral content to see your sessions here.'

@@ -4,9 +4,20 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
+        // Custom theme-aware colors using CSS variables
+        'bg-primary': 'rgb(var(--color-bg-primary) / <alpha-value>)',
+        'bg-secondary': 'rgb(var(--color-bg-secondary) / <alpha-value>)',
+        'bg-tertiary': 'rgb(var(--color-bg-tertiary) / <alpha-value>)',
+        'text-primary': 'rgb(var(--color-text-primary) / <alpha-value>)',
+        'text-secondary': 'rgb(var(--color-text-secondary) / <alpha-value>)',
+        'text-tertiary': 'rgb(var(--color-text-tertiary) / <alpha-value>)',
+        'border-primary': 'rgb(var(--color-border-primary) / <alpha-value>)',
+        'border-secondary': 'rgb(var(--color-border-secondary) / <alpha-value>)',
+        
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',
@@ -80,6 +91,7 @@ export default {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-slow': 'pulse 3s infinite',
+        'theme-transition': 'themeTransition 0.2s ease-in-out',
       },
       keyframes: {
         fadeIn: {
@@ -89,6 +101,10 @@ export default {
         slideUp: {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        themeTransition: {
+          '0%': { opacity: '0.8' },
+          '100%': { opacity: '1' },
         },
       },
     },

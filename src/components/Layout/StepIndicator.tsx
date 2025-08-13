@@ -20,7 +20,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
   completedSteps = []
 }) => {
   return (
-    <div className="bg-white border-b border-gray-200">
+    <div className="bg-bg-secondary border-b border-border-primary">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <nav aria-label="Progress">
           <ol className="flex items-center justify-between">
@@ -34,7 +34,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                 <li key={step.id} className="relative flex-1">
                   {/* Connector Line */}
                   {stepIdx !== steps.length - 1 && (
-                    <div className="absolute top-4 left-1/2 w-full h-0.5 bg-gray-200">
+                    <div className="absolute top-4 left-1/2 w-full h-0.5 bg-border-primary">
                       <div 
                         className={`h-full transition-all duration-300 ${
                           currentStep > step.id ? 'bg-success-500' : 'bg-gray-200'
@@ -61,10 +61,10 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                           ? 'bg-success-500 border-success-500 text-white'
                           : isCurrent
                           ? 'bg-primary-600 border-primary-600 text-white'
-                          : 'bg-white border-gray-300 text-gray-500'
+                          : 'bg-bg-secondary border-border-secondary text-text-tertiary'
                       } ${
                         isClickable && !isCurrent && !isCompleted
-                          ? 'group-hover:border-primary-400 group-hover:text-primary-600'
+                          ? 'group-hover:border-primary-400 group-hover:text-primary-600 dark:group-hover:border-primary-500'
                           : ''
                       }`}
                     >
@@ -83,16 +83,16 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                             ? 'text-primary-600'
                             : isCompleted
                             ? 'text-success-600'
-                            : 'text-gray-500'
+                            : 'text-text-tertiary'
                         } ${
                           isClickable && !isCurrent && !isCompleted
-                            ? 'group-hover:text-primary-600'
+                            ? 'group-hover:text-primary-600 dark:group-hover:text-primary-400'
                             : ''
                         }`}
                       >
                         {step.title}
                       </div>
-                      <div className="text-xs text-gray-400 mt-1 hidden sm:block">
+                      <div className="text-xs text-text-tertiary mt-1 hidden sm:block">
                         {step.description}
                       </div>
                     </div>

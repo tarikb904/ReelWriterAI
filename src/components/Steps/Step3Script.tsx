@@ -141,10 +141,10 @@ const Step3Script: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-heading font-bold text-gray-900 mb-4">
+        <h1 className="text-3xl font-heading font-bold text-text-primary mb-4">
           Write Your Video Script
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className="text-lg text-text-secondary max-w-2xl mx-auto">
           Create a compelling 2-2.5 minute script that follows proven frameworks for maximum engagement.
         </p>
       </div>
@@ -152,25 +152,25 @@ const Step3Script: React.FC = () => {
       {/* Context Cards */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {/* Content Idea */}
-        <div className="bg-primary-50 border border-primary-200 rounded-xl p-6">
-          <h3 className="font-semibold text-primary-900 mb-2">Content Idea:</h3>
-          <p className="text-primary-800 font-medium text-sm">{selectedContentIdea.title}</p>
+        <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 dark:bg-primary-900/20 dark:border-primary-800">
+          <h3 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">Content Idea:</h3>
+          <p className="text-primary-800 dark:text-primary-200 font-medium text-sm">{selectedContentIdea.title}</p>
         </div>
 
         {/* Selected Hook */}
-        <div className="bg-success-50 border border-success-200 rounded-xl p-6">
-          <h3 className="font-semibold text-success-900 mb-2">Selected Hook:</h3>
-          <p className="text-success-800 font-medium text-sm">"{selectedHook.content}"</p>
+        <div className="bg-success-50 border border-success-200 rounded-xl p-6 dark:bg-success-900/20 dark:border-success-800">
+          <h3 className="font-semibold text-success-900 dark:text-success-100 mb-2">Selected Hook:</h3>
+          <p className="text-success-800 dark:text-success-200 font-medium text-sm">"{selectedHook.content}"</p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="card mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <FileText className="w-5 h-5 text-primary-600" />
-            <span className="font-medium text-gray-900">Video Script</span>
-            <span className="text-sm text-gray-500">Using {selectedAPI.name}</span>
+            <span className="font-medium text-text-primary">Video Script</span>
+            <span className="text-sm text-text-tertiary">Using {selectedAPI.name}</span>
           </div>
           
           <div className="flex items-center space-x-3">
