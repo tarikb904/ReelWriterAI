@@ -199,8 +199,8 @@ const Step2Hooks: React.FC = () => {
               return (
                 <div
                   key={index}
-                  className={`card cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary-200 ${
-                    isSelected ? 'ring-2 ring-primary-500 border-primary-300 bg-primary-50' : ''
+                  className={`card cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary-200 dark:hover:border-primary-700 ${
+                    isSelected ? 'ring-2 ring-primary-500 border-primary-300 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/20' : ''
                   }`}
                   onClick={() => handleSelectHook(hook, index)}
                 >
@@ -208,14 +208,14 @@ const Step2Hooks: React.FC = () => {
                     <div className="flex-1">
                       {/* Hook Type Badge */}
                       <div className="flex items-center space-x-2 mb-3">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getHookTypeColor(hookType)}`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getHookTypeColor(hookType)} dark:bg-opacity-20`}>
                           {hookType}
                         </span>
-                        <span className="text-xs text-gray-500">Hook #{index + 1}</span>
+                        <span className="text-xs text-text-tertiary">Hook #{index + 1}</span>
                       </div>
 
                       {/* Hook Content */}
-                      <p className="text-gray-900 font-medium text-lg leading-relaxed mb-4">
+                      <p className="text-text-primary font-medium text-lg leading-relaxed mb-4">
                         "{hook}"
                       </p>
 
@@ -269,16 +269,16 @@ const Step2Hooks: React.FC = () => {
 
           {/* Selected Hook Summary */}
           {selectedHook && (
-            <div className="bg-success-50 border border-success-200 rounded-xl p-6">
+            <div className="bg-success-50 border border-success-200 rounded-xl p-6 dark:bg-success-900/20 dark:border-success-800">
               <div className="flex items-center space-x-2 mb-3">
                 <Check className="w-5 h-5 text-success-600" />
-                <h3 className="font-semibold text-success-900">Selected Hook</h3>
+                <h3 className="font-semibold text-success-900 dark:text-success-100">Selected Hook</h3>
               </div>
-              <p className="text-success-800 font-medium text-lg mb-4">
+              <p className="text-success-800 dark:text-success-200 font-medium text-lg mb-4">
                 "{selectedHook.content}"
               </p>
               <div className="flex items-center justify-between">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getHookTypeColor(selectedHook.type)}`}>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getHookTypeColor(selectedHook.type)} dark:bg-opacity-20`}>
                   {selectedHook.type}
                 </span>
                 <button
@@ -297,9 +297,9 @@ const Step2Hooks: React.FC = () => {
       {/* Empty State */}
       {!isLoading && hooks.length === 0 && !error && (
         <div className="text-center py-12">
-          <Zap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Hooks Generated</h3>
-          <p className="text-gray-600 mb-6">
+          <Zap className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-text-primary mb-2">No Hooks Generated</h3>
+          <p className="text-text-secondary mb-6">
             Click the generate button to create engaging hooks for your content.
           </p>
           <button

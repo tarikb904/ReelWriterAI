@@ -217,30 +217,30 @@ const Step3Script: React.FC = () => {
       {!isLoading && script && (
         <div className="space-y-6">
           {/* Script Stats */}
-          <div className="bg-gray-50 rounded-xl p-6">
+          <div className="bg-bg-tertiary rounded-xl p-6">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
               <div className="text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <BarChart3 className="w-5 h-5 text-primary-600" />
-                  <span className="text-sm font-medium text-gray-700">Word Count</span>
+                  <span className="text-sm font-medium text-text-secondary">Word Count</span>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{script.wordCount}</div>
+                <div className="text-2xl font-bold text-text-primary">{script.wordCount}</div>
               </div>
               
               <div className="text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Clock className="w-5 h-5 text-primary-600" />
-                  <span className="text-sm font-medium text-gray-700">Duration</span>
+                  <span className="text-sm font-medium text-text-secondary">Duration</span>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{formatDuration(script.estimatedDuration)}</div>
+                <div className="text-2xl font-bold text-text-primary">{formatDuration(script.estimatedDuration)}</div>
               </div>
               
               <div className="text-center col-span-2 md:col-span-1">
-                <div className="text-sm font-medium text-gray-700 mb-2">Status</div>
+                <div className="text-sm font-medium text-text-secondary mb-2">Status</div>
                 <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                   script.estimatedDuration >= 120 && script.estimatedDuration <= 150
-                    ? 'bg-success-100 text-success-800'
-                    : 'bg-warning-100 text-warning-800'
+                    ? 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-200'
+                    : 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-200'
                 }`}>
                   {script.estimatedDuration >= 120 && script.estimatedDuration <= 150
                     ? 'Perfect Length'
@@ -254,10 +254,10 @@ const Step3Script: React.FC = () => {
           </div>
 
           {/* Script Editor */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-bg-secondary rounded-xl shadow-sm border border-border-primary">
+            <div className="p-6 border-b border-border-primary">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Your Video Script</h3>
+                <h3 className="text-lg font-semibold text-text-primary">Your Video Script</h3>
                 {isEditing && (
                   <div className="flex items-center space-x-3">
                     <button
@@ -292,7 +292,7 @@ const Step3Script: React.FC = () => {
                 />
               ) : (
                 <div className="prose max-w-none">
-                  <pre className="whitespace-pre-wrap font-sans text-gray-900 leading-relaxed">
+                  <pre className="whitespace-pre-wrap font-sans text-text-primary leading-relaxed">
                     {script.content}
                   </pre>
                 </div>
@@ -303,7 +303,7 @@ const Step3Script: React.FC = () => {
           {/* Action Buttons */}
           {!isEditing && (
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-text-tertiary">
                 Last updated: {new Date(script.updatedAt).toLocaleString()}
               </div>
               
@@ -322,9 +322,9 @@ const Step3Script: React.FC = () => {
       {/* Empty State */}
       {!isLoading && !script && !error && (
         <div className="text-center py-12">
-          <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Create Your Script</h3>
-          <p className="text-gray-600 mb-6">
+          <FileText className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-text-primary mb-2">Ready to Create Your Script</h3>
+          <p className="text-text-secondary mb-6">
             Generate a professional video script based on your selected content idea and hook.
           </p>
           <button

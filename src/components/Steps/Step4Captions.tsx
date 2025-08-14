@@ -208,7 +208,7 @@ Generated with ReelWriterAI
       {!isLoading && generatedCaptions && (
         <div className="space-y-8">
           {/* Instagram/Facebook/Threads */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-bg-secondary rounded-xl shadow-sm border border-border-primary overflow-hidden">
             <div className="bg-gradient-to-r from-pink-500 to-purple-600 px-6 py-4">
               <div className="flex items-center space-x-3">
                 <Instagram className="w-6 h-6 text-white" />
@@ -216,8 +216,8 @@ Generated with ReelWriterAI
               </div>
             </div>
             <div className="p-6">
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <pre className="whitespace-pre-wrap text-sm text-gray-900 font-sans leading-relaxed">
+              <div className="bg-bg-tertiary rounded-lg p-4 mb-4">
+                <pre className="whitespace-pre-wrap text-sm text-text-primary font-sans leading-relaxed">
                   {generatedCaptions.instagram}
                 </pre>
               </div>
@@ -241,7 +241,7 @@ Generated with ReelWriterAI
           </div>
 
           {/* LinkedIn */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-bg-secondary rounded-xl shadow-sm border border-border-primary overflow-hidden">
             <div className="bg-blue-600 px-6 py-4">
               <div className="flex items-center space-x-3">
                 <Linkedin className="w-6 h-6 text-white" />
@@ -249,8 +249,8 @@ Generated with ReelWriterAI
               </div>
             </div>
             <div className="p-6">
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <pre className="whitespace-pre-wrap text-sm text-gray-900 font-sans leading-relaxed">
+              <div className="bg-bg-tertiary rounded-lg p-4 mb-4">
+                <pre className="whitespace-pre-wrap text-sm text-text-primary font-sans leading-relaxed">
                   {generatedCaptions.linkedin}
                 </pre>
               </div>
@@ -274,7 +274,7 @@ Generated with ReelWriterAI
           </div>
 
           {/* YouTube Titles */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-bg-secondary rounded-xl shadow-sm border border-border-primary overflow-hidden">
             <div className="bg-red-600 px-6 py-4">
               <div className="flex items-center space-x-3">
                 <Youtube className="w-6 h-6 text-white" />
@@ -284,15 +284,15 @@ Generated with ReelWriterAI
             <div className="p-6">
               <div className="space-y-3">
                 {generatedCaptions.youtube.map((title, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+                  <div key={index} className="flex items-center justify-between bg-bg-tertiary rounded-lg p-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <span className="text-xs font-medium text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                        <span className="text-xs font-medium text-text-tertiary bg-border-primary px-2 py-1 rounded">
                           #{index + 1}
                         </span>
-                        <span className="text-sm font-medium text-gray-900">{title}</span>
+                        <span className="text-sm font-medium text-text-primary">{title}</span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-text-tertiary mt-1">
                         {title.length} characters
                       </div>
                     </div>
@@ -319,12 +319,12 @@ Generated with ReelWriterAI
           </div>
 
           {/* Success Message */}
-          <div className="bg-success-50 border border-success-200 rounded-xl p-6 text-center">
+          <div className="bg-success-50 border border-success-200 rounded-xl p-6 text-center dark:bg-success-900/20 dark:border-success-800">
             <div className="flex items-center justify-center space-x-2 mb-3">
               <Check className="w-6 h-6 text-success-600" />
-              <h3 className="text-lg font-semibold text-success-900">Content Creation Complete!</h3>
+              <h3 className="text-lg font-semibold text-success-900 dark:text-success-100">Content Creation Complete!</h3>
             </div>
-            <p className="text-success-800 mb-4">
+            <p className="text-success-800 dark:text-success-200 mb-4">
               Your viral content package is ready! You now have a complete set of materials for your short-form video.
             </p>
             <div className="flex items-center justify-center space-x-4">
@@ -343,9 +343,9 @@ Generated with ReelWriterAI
       {/* Empty State */}
       {!isLoading && !generatedCaptions && !error && (
         <div className="text-center py-12">
-          <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Generate Captions</h3>
-          <p className="text-gray-600 mb-6">
+          <MessageSquare className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-text-primary mb-2">Ready to Generate Captions</h3>
+          <p className="text-text-secondary mb-6">
             Create optimized social media captions and titles based on your script.
           </p>
           <button

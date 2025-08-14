@@ -32,11 +32,11 @@ const ThemeToggle: React.FC = () => {
   };
 
   return (
-    <div className="relative">
+    <div className="relative group">
       {/* Main toggle button */}
       <button
         onClick={toggleTheme}
-        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        className="p-2 rounded-lg bg-bg-tertiary hover:bg-border-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-bg-secondary"
         aria-label={`Current theme: ${getThemeLabel()}. Click to cycle through themes.`}
         title={getThemeLabel()}
       >
@@ -45,17 +45,17 @@ const ThemeToggle: React.FC = () => {
           
           {/* Visual indicator for resolved theme when using system */}
           {theme === 'system' && (
-            <div className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-primary-500 border border-white dark:border-gray-800" />
+            <div className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-primary-500 border border-bg-secondary" />
           )}
         </div>
       </button>
 
       {/* Dropdown menu for precise theme selection */}
-      <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+      <div className="absolute right-0 top-full mt-2 w-48 bg-bg-secondary rounded-lg shadow-lg border border-border-primary py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
         <button
           onClick={() => setTheme('light')}
-          className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2 ${
-            theme === 'light' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
+          className={`w-full px-3 py-2 text-left text-sm hover:bg-bg-tertiary transition-colors flex items-center space-x-2 ${
+            theme === 'light' ? 'text-primary-600' : 'text-text-secondary'
           }`}
         >
           <Sun className="w-4 h-4" />
@@ -65,8 +65,8 @@ const ThemeToggle: React.FC = () => {
         
         <button
           onClick={() => setTheme('dark')}
-          className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2 ${
-            theme === 'dark' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
+          className={`w-full px-3 py-2 text-left text-sm hover:bg-bg-tertiary transition-colors flex items-center space-x-2 ${
+            theme === 'dark' ? 'text-primary-600' : 'text-text-secondary'
           }`}
         >
           <Moon className="w-4 h-4" />
@@ -76,8 +76,8 @@ const ThemeToggle: React.FC = () => {
         
         <button
           onClick={() => setTheme('system')}
-          className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2 ${
-            theme === 'system' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
+          className={`w-full px-3 py-2 text-left text-sm hover:bg-bg-tertiary transition-colors flex items-center space-x-2 ${
+            theme === 'system' ? 'text-primary-600' : 'text-text-secondary'
           }`}
         >
           <Monitor className="w-4 h-4" />

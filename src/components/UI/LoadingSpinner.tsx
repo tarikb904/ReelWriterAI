@@ -23,7 +23,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       <div className="flex flex-col items-center space-y-2">
         <Loader2 className={`${sizeClasses[size]} animate-spin text-primary-600`} />
         {text && (
-          <p className="text-sm text-gray-600 animate-pulse">{text}</p>
+          <p className="text-sm text-text-secondary animate-pulse">{text}</p>
         )}
       </div>
     </div>
