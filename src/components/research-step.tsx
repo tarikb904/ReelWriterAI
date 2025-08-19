@@ -39,37 +39,21 @@ function maskKey(key?: string | null) {
   return `${key.slice(0,6)}...${key.slice(-4)}`;
 }
 
-// Basic stop words list for topic extraction
-const STOPWORDS = new Set([
-  "the","and","for","to","of","in","on","a","is","how","this","that","with","you","your","are","my","i","be","from","by","at","it"
-]);
-
-function extractTopics(ideas: ContentIdea[], topN = 8) {
-  const freq: Record<string, number> = {};
-  ideas.forEach((idea) => {
-    const text = `${idea.title} ${idea.snippet}`.toLowerCase();
-    const words = text.match(/\b[a-z0-9]{3,}\b/g) || [];
-    words.forEach((w) => {
-      if (STOPWORDS.has(w)) return;
-      freq[w] = (freq[w] || 0) + 1;
-    });
-  });
-  const entries = Object.entries(freq).sort((a, b) => b[1] - a[1]);
-  return entries.slice(0, topN).map(([word, count]) => ({ word, count }));
-}
-
 export function ResearchStep({ onNext }: ResearchStepProps) {
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
   const session = useSession();
-  const [apiKey, setApiKey] = useState<string | null>(session.apiKey ?? "");
+  const [apiKeyInput, setApiKeyInput] = useState<string | null>(session.apiKey ?? "");
   const [selectedApi, setSelectedApi] = useState<string>(session.model || DEFAULT_MODELS[0]);
   const [availableModels, setAvailableModels] = useState<string[]>(DEFAULT_MODELS);
-  const [validating, setValidating] = useState(false);
-  const [isValidKey, setIsValidKey] = useState<boolean | null>(null);
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
-  const [filterTopic, setFilterTopic] = useState<string | null>(null);
+  const [validatingOpenRouter, setValidatingOpenRouter] = useState(false);
+  const [openRouterStatus, setOpenRouterStatus] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const [redditIdInput, setRedditIdInput] = useState<string | null>(session.redditClientId ?? "");
+  const [redditSecretInput, setRedditSecretInput] = useState<string | null>(session.redditClientSecret ?? "");
+  const [validatingReddit, setValidatingReddit] = useState(false);
+  const [redditStatus, setRedditStatus] = useState<{ ok: boolean; message: string } | null>(null);
 
   const fetchIdeas = async (forceRefresh = false) => {
     setLoading(true);
@@ -122,63 +106,72 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
     fetchIdeas();
   }, []);
 
-  const validateKey = async () => {
-    if (!apiKey) {
-      setIsValidKey(false);
-      setValidationMessage("No API key entered");
+  const validateOpenRouter = async () => {
+    if (!apiKeyInput) {
+      setOpenRouterStatus({ ok: false, message: "No OpenRouter API key entered" });
       return;
     }
-    setValidating(true);
-    setIsValidKey(null);
-    setValidationMessage(null);
-
+    setValidatingOpenRouter(true);
+    setOpenRouterStatus(null);
     try {
       const res = await fetch("/api/validate-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey }),
+        body: JSON.stringify({ apiKey: apiKeyInput }),
       });
-
       const data = await res.json();
       if (res.ok && data.ok) {
-        setIsValidKey(true);
-        setValidationMessage("API key validated");
+        setOpenRouterStatus({ ok: true, message: "OpenRouter key validated" });
         if (Array.isArray(data.models) && data.models.length > 0) {
           setAvailableModels(data.models);
           setSelectedApi(data.models[0]);
         }
-        // also persist to session context (sessionStorage)
-        session.setApiKey(apiKey);
+        session.setApiKey(apiKeyInput);
       } else {
-        setIsValidKey(false);
-        setValidationMessage(data?.message || "Validation failed");
+        setOpenRouterStatus({ ok: false, message: data?.message || "Validation failed" });
       }
     } catch (err) {
-      console.error("Validation error:", err);
-      setIsValidKey(false);
-      setValidationMessage("Validation request failed");
+      console.error("OpenRouter validation error:", err);
+      setOpenRouterStatus({ ok: false, message: "Validation request failed" });
     } finally {
-      setValidating(false);
+      setValidatingOpenRouter(false);
+    }
+  };
+
+  const validateReddit = async () => {
+    if (!redditIdInput || !redditSecretInput) {
+      setRedditStatus({ ok: false, message: "Missing Reddit client id or secret" });
+      return;
+    }
+    setValidatingReddit(true);
+    setRedditStatus(null);
+    try {
+      const res = await fetch("/api/validate-reddit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: redditIdInput, clientSecret: redditSecretInput }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setRedditStatus({ ok: true, message: "Reddit credentials validated" });
+        session.setRedditClientId(redditIdInput);
+        session.setRedditClientSecret(redditSecretInput);
+      } else {
+        setRedditStatus({ ok: false, message: data?.message || "Validation failed" });
+      }
+    } catch (err) {
+      console.error("Reddit validation error:", err);
+      setRedditStatus({ ok: false, message: "Validation request failed" });
+    } finally {
+      setValidatingReddit(false);
     }
   };
 
   const handleNextClick = async () => {
     if (!selectedIdea) return;
-    // If key validated, store it session-scoped
-    if (isValidKey && apiKey) {
-      session.setApiKey(apiKey);
-      session.setModel(selectedApi);
-    } else {
-      // allow proceeding without validated key but warn
-      if (!confirm("API key not validated — you can proceed but generation may fail. Continue?")) return;
-      session.setApiKey(apiKey || null);
-      session.setModel(selectedApi);
-    }
-
-    // Create a new session meta and persist initial session object
-    const meta = session.createNewSession(selectedIdea.title);
-
-    // Prepare stored session (do not save raw API key)
+    // store model and masked key meta into history session when creating
+    session.setModel(selectedApi);
+    const meta = session.createNewSession(selectedIdea.title || "");
     const stored = {
       sessionId: meta.sessionId,
       createdAt: meta.createdAt,
@@ -192,10 +185,10 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
       },
       model: selectedApi,
       meta: {
-        apiKeyMasked: maskKey(apiKey),
+        apiKeyMasked: maskKey(apiKeyInput),
+        redditIdMasked: maskKey(redditIdInput),
       },
     };
-
     try {
       await saveSession(stored);
       toast.success("Session started and saved to history.");
@@ -204,11 +197,23 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
       toast.error("Failed to initialize session in history.");
     }
 
-    onNext(selectedIdea, apiKey || "", selectedApi);
+    onNext(selectedIdea, apiKeyInput || "", selectedApi);
   };
 
-  const topics = useMemo(() => extractTopics(ideas), [ideas]);
+  const topics = useMemo(() => {
+    const freq: Record<string, number> = {};
+    ideas.forEach((idea) => {
+      const text = `${idea.title} ${idea.snippet}`.toLowerCase();
+      const words = text.match(/\b[a-z0-9]{3,}\b/g) || [];
+      words.forEach((w) => {
+        if (["the","and","for","to","of","in","on","a","is","how","this","that","with","you","your","are","my","i","be","from","by","at","it"].includes(w)) return;
+        freq[w] = (freq[w] || 0) + 1;
+      });
+    });
+    return Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0,8).map(([word,count])=>({word,count}));
+  }, [ideas]);
 
+  const [filterTopic, setFilterTopic] = useState<string | null>(null);
   const filteredIdeas = useMemo(() => {
     if (!filterTopic) return ideas;
     const t = filterTopic.toLowerCase();
@@ -291,13 +296,15 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
         </div>
       </div>
 
+      {/* Right-side: API Keys panel */}
       <div className="lg:col-span-1">
         <Card className="sticky top-8 glass-card">
           <CardHeader>
-            <CardTitle>Configuration</CardTitle>
-            <CardDescription>Select your AI model and validate your OpenRouter key.</CardDescription>
+            <CardTitle>API Keys</CardTitle>
+            <CardDescription>Manage your session keys and validate them before generating content.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
+            {/* OpenRouter */}
             <div className="grid gap-2">
               <Label htmlFor="api-key">OpenRouter API Key</Label>
               <div className="flex gap-2">
@@ -305,33 +312,62 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
                   id="api-key"
                   type="password"
                   placeholder="Enter your OpenRouter API key"
-                  value={apiKey ?? ""}
-                  onChange={(e) => { setApiKey(e.target.value); setIsValidKey(null); setValidationMessage(null); }}
+                  value={apiKeyInput ?? ""}
+                  onChange={(e) => { setApiKeyInput(e.target.value); setOpenRouterStatus(null); }}
                 />
-                <Button onClick={validateKey} disabled={validating || !apiKey}>
-                  {validating ? "Validating..." : "Validate"}
+                <Button onClick={validateOpenRouter} disabled={validatingOpenRouter || !apiKeyInput}>
+                  {validatingOpenRouter ? "Validating..." : "Validate"}
                 </Button>
               </div>
-              {isValidKey === true && <p className="text-sm text-green-500">{validationMessage}</p>}
-              {isValidKey === false && <p className="text-sm text-red-500">{validationMessage}</p>}
+              {openRouterStatus && (
+                <p className={`text-sm ${openRouterStatus.ok ? "text-green-500" : "text-red-500"}`}>{openRouterStatus.message}</p>
+              )}
+              <div className="text-xs text-muted-foreground">
+                Stored only for this browser session. Masked copy will be kept in history entries.
+              </div>
             </div>
 
+            {/* Reddit */}
             <div className="grid gap-2">
-              <Label htmlFor="api-select" className="text-sm font-medium">AI Model</Label>
+              <Label htmlFor="reddit-id">Reddit Client ID</Label>
+              <Input
+                id="reddit-id"
+                type="text"
+                placeholder="client id"
+                value={redditIdInput ?? ""}
+                onChange={(e) => { setRedditIdInput(e.target.value); setRedditStatus(null); }}
+              />
+              <Label htmlFor="reddit-secret">Reddit Client Secret</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="reddit-secret"
+                  type="password"
+                  placeholder="client secret"
+                  value={redditSecretInput ?? ""}
+                  onChange={(e) => { setRedditSecretInput(e.target.value); setRedditStatus(null); }}
+                />
+                <Button onClick={validateReddit} disabled={validatingReddit || !redditIdInput || !redditSecretInput}>
+                  {validatingReddit ? "Validating..." : "Validate"}
+                </Button>
+              </div>
+              {redditStatus && (
+                <p className={`text-sm ${redditStatus.ok ? "text-green-500" : "text-red-500"}`}>{redditStatus.message}</p>
+              )}
+              <div className="text-xs text-muted-foreground">
+                Reddit credentials are optional — used to improve Reddit fetch reliability when present.
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Label className="text-sm font-medium">Selected Model</Label>
               <Select value={selectedApi} onValueChange={setSelectedApi}>
-                <SelectTrigger id="api-select">
+                <SelectTrigger>
                   <SelectValue placeholder="Select an AI model" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableModels.map(model => (
-                    <SelectItem key={model} value={model}>{model}</SelectItem>
-                  ))}
+                  {availableModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="text-xs text-muted-foreground">
-              Your API key is stored only for this browser session and not persisted in history (masked copy saved).
             </div>
 
             <Button size="lg" className="w-full" disabled={!selectedIdea} onClick={handleNextClick}>

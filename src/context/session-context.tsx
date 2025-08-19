@@ -14,6 +14,10 @@ type SessionContextValue = {
   setApiKey: (key: string | null) => void;
   model: string;
   setModel: (m: string) => void;
+  redditClientId: string | null;
+  setRedditClientId: (id: string | null) => void;
+  redditClientSecret: string | null;
+  setRedditClientSecret: (s: string | null) => void;
   sessionMeta: SessionMeta | null;
   createNewSession: (title?: string) => SessionMeta;
   clearSession: () => void;
@@ -29,7 +33,6 @@ function getExpiresAt(days = DEFAULT_EXPIRE_DAYS) {
 }
 
 function generateId(): string {
-  // Use crypto.randomUUID if available, otherwise fallback to a small unique string
   try {
     if (typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function") {
       return (crypto as any).randomUUID();
@@ -54,6 +57,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-model`) || "mistralai/mistral-7b-instruct:free";
     } catch {
       return "mistralai/mistral-7b-instruct:free";
+    }
+  });
+
+  const [redditClientId, setRedditClientIdState] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-reddit-id`);
+    } catch {
+      return null;
+    }
+  });
+
+  const [redditClientSecret, setRedditClientSecretState] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-reddit-secret`);
+    } catch {
+      return null;
     }
   });
 
@@ -82,6 +101,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
+      if (redditClientId) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-reddit-id`, redditClientId);
+      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-reddit-id`);
+    } catch {}
+  }, [redditClientId]);
+
+  useEffect(() => {
+    try {
+      if (redditClientSecret) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-reddit-secret`, redditClientSecret);
+      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-reddit-secret`);
+    } catch {}
+  }, [redditClientSecret]);
+
+  useEffect(() => {
+    try {
       if (sessionMeta) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-meta`, JSON.stringify(sessionMeta));
       else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-meta`);
     } catch {}
@@ -93,6 +126,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const setModel = (m: string) => {
     setModelState(m);
+  };
+
+  const setRedditClientId = (id: string | null) => {
+    setRedditClientIdState(id);
+  };
+
+  const setRedditClientSecret = (s: string | null) => {
+    setRedditClientSecretState(s);
   };
 
   const createNewSession = (title?: string) => {
@@ -109,10 +150,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const clearSession = () => {
     setApiKeyState(null);
     setModelState("mistralai/mistral-7b-instruct:free");
+    setRedditClientIdState(null);
+    setRedditClientSecretState(null);
     setSessionMeta(null);
     try {
       sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-apiKey`);
       sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-model`);
+      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-reddit-id`);
+      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-reddit-secret`);
       sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-meta`);
     } catch {}
   };
@@ -122,6 +167,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setApiKey,
     model,
     setModel,
+    redditClientId,
+    setRedditClientId,
+    redditClientSecret,
+    setRedditClientSecret,
     sessionMeta,
     createNewSession,
     clearSession,
