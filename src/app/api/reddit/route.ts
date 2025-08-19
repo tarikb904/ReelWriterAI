@@ -4,9 +4,9 @@ const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID;
 const REDDIT_CLIENT_SECRET = process.env.REDDIT_CLIENT_SECRET;
 
 const subreddits = [
-  "Entrepreneur", "SmallBusiness", "SideHustle", "MakeMoneyOnline", 
-  "DigitalMarketing", "Passive_Income", "WorkOnline", "Freelance", 
-  "Marketing", "OnlineBusiness", "AffiliateMarketing", "Ecommerce", 
+  "Entrepreneur", "SmallBusiness", "SideHustle", "MakeMoneyOnline",
+  "DigitalMarketing", "Passive_Income", "WorkOnline", "Freelance",
+  "Marketing", "OnlineBusiness", "AffiliateMarketing", "Ecommerce",
   "Startups", "GrowMyBusiness", "BusinessHub"
 ];
 
@@ -39,30 +39,64 @@ async function getAccessToken() {
   return accessToken;
 }
 
-export async function GET() {
-  if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET) {
-    return NextResponse.json({ error: "Reddit API credentials are not configured." }, { status: 500 });
+async function fetchSubredditUnauth(subreddit: string) {
+  const res = await fetch(`https://www.reddit.com/r/${subreddit}/hot.json?limit=10`, {
+    headers: { "User-Agent": "ReelWriterAI/1.0 (+https://example.com)" },
+    cache: 'no-store'
+  });
+  if (!res.ok) {
+    // Return empty array rather than throwing, so one failing subreddit doesn't break everything.
+    console.error(`Unauthenticated Reddit fetch failed for r/${subreddit}:`, res.status, await res.text().catch(() => ''));
+    return [];
   }
+  const json = await res.json();
+  return (json.data?.children || []).map((post: any) => post.data);
+}
 
+async function fetchSubredditAuth(subreddit: string, token: string) {
+  const res = await fetch(`https://oauth.reddit.com/r/${subreddit}/hot.json?limit=10`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) {
+    console.error(`Authenticated Reddit fetch failed for r/${subreddit}:`, res.status, await res.text().catch(() => ''));
+    return [];
+  }
+  const json = await res.json();
+  return (json.data?.children || []).map((post: any) => post.data);
+}
+
+export async function GET() {
   try {
-    const token = await getAccessToken();
-    const fetchPromises = subreddits.map(subreddit =>
-      fetch(`https://oauth.reddit.com/r/${subreddit}/hot.json?limit=10`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then(res => res.json())
-    );
+    let allPosts: any[] = [];
 
-    const results = await Promise.all(fetchPromises);
-    
-    const ideas = results.flatMap(result => 
-      result.data?.children.map((post: any) => ({
-        id: post.data.id,
-        title: post.data.title,
-        snippet: post.data.selftext.slice(0, 150) + (post.data.selftext.length > 150 ? '...' : ''),
-        source: `r/${post.data.subreddit}`,
-        url: `https://www.reddit.com${post.data.permalink}`,
-      })) || []
-    );
+    if (REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET) {
+      // Use OAuth flow
+      const token = await getAccessToken();
+      const fetchPromises = subreddits.map((sr) => fetchSubredditAuth(sr, token));
+      const results = await Promise.all(fetchPromises);
+      allPosts = results.flat();
+    } else {
+      // Fallback to unauthenticated public endpoints (works server-side)
+      const fetchPromises = subreddits.map((sr) => fetchSubredditUnauth(sr));
+      const results = await Promise.all(fetchPromises);
+      allPosts = results.flat();
+    }
+
+    const ideas = allPosts
+      .filter(Boolean)
+      .map((post: any) => {
+        const body = (post.selftext || "").trim();
+        const snippetSource = body || post.title || "";
+        const snippet = snippetSource.length > 150 ? snippetSource.slice(0, 150) + "..." : snippetSource;
+        return {
+          id: String(post.id || post.link_id || post.name || post.permalink || `${post.title}-${Math.random().toString(36).slice(2,8)}`),
+          title: post.title || (post.link_title || "").slice(0, 200),
+          snippet,
+          source: `r/${post.subreddit || "unknown"}`,
+          url: post.permalink ? `https://www.reddit.com${post.permalink}` : (post.url || "")
+        };
+      });
 
     return NextResponse.json(ideas);
   } catch (error) {
