@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
+import { useSession } from "@/context/session-context";
+import { getSession, saveSession, type StoredSession } from "@/lib/storage";
 
 interface ContentIdea {
   id: string;
@@ -28,6 +30,24 @@ interface ScriptStepProps {
 export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: ScriptStepProps) {
   const [script, setScript] = useState("");
   const [loading, setLoading] = useState(false);
+  const session = useSession();
+
+  const persistScript = async (text: string) => {
+    if (!session.sessionMeta) return;
+    try {
+      const existing = await getSession(session.sessionMeta.sessionId);
+      const updated: StoredSession = {
+        sessionId: session.sessionMeta.sessionId,
+        createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
+        expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
+        ...(existing || {}),
+        script: { text, edited: true, lastEdited: Date.now() },
+      };
+      await saveSession(updated);
+    } catch (err) {
+      console.error("Failed to save script:", err);
+    }
+  };
 
   const generateScript = async () => {
     setLoading(true);
@@ -48,6 +68,7 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
 
       const data = await response.json();
       setScript(data.script);
+      await persistScript(data.script);
       toast.success("Your script is ready!");
     } catch (error: any) {
       console.error(error);
@@ -84,6 +105,7 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
           <Textarea
             value={script}
             onChange={(e) => setScript(e.target.value)}
+            onBlur={() => persistScript(script)}
             className="w-full h-[70vh] text-base"
             placeholder="Your generated script will appear here..."
           />
@@ -102,7 +124,7 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
               <h3 className="font-semibold text-md mb-1">Selected Hook:</h3>
               <p className="text-sm text-muted-foreground">{hook}</p>
             </div>
-            <Button size="lg" className="w-full" disabled={!script} onClick={handleNextClick}>
+            <Button size="lg" className="w-full" disabled={!script} onClick={() => { persistScript(script); handleNextClick(); }}>
               Step 4: Generate Captions
             </Button>
             <Button size="lg" variant="outline" className="w-full" onClick={onBack}>

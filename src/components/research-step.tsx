@@ -10,6 +10,8 @@ import { RefreshCw, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSession } from "@/context/session-context";
+import { saveSession } from "@/lib/storage";
 
 export interface ContentIdea {
   id: string;
@@ -38,12 +40,19 @@ const openRouterModels = [
     "meta-llama/llama-3-70b-instruct",
 ];
 
+function maskKey(key?: string | null) {
+  if (!key) return null;
+  if (key.length <= 10) return key;
+  return `${key.slice(0,6)}...${key.slice(-4)}`;
+}
+
 export function ResearchStep({ onNext }: ResearchStepProps) {
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
-  const [apiKey, setApiKey] = useState("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");
-  const [selectedApi, setSelectedApi] = useState(openRouterModels[0]);
+  const session = useSession();
+  const [apiKey, setApiKey] = useState<string | null>(session.apiKey ?? "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");
+  const [selectedApi, setSelectedApi] = useState<string>(session.model || openRouterModels[0]);
 
   const fetchIdeas = async (forceRefresh = false) => {
     setLoading(true);
@@ -77,6 +86,7 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
 
       const combinedIdeas = [...redditIdeas, ...rssIdeas, ...hnIdeas];
       
+      // Deduplicate and shuffle
       const uniqueIdeas = Array.from(new Map(combinedIdeas.map(idea => [idea.title, idea])).values());
       const shuffledIdeas = uniqueIdeas.sort(() => 0.5 - Math.random()).slice(0, 50);
 
@@ -95,10 +105,42 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
     fetchIdeas();
   }, []);
 
-  const handleNextClick = () => {
-    if (selectedIdea && apiKey) {
-      onNext(selectedIdea, apiKey, selectedApi);
+  const handleNextClick = async () => {
+    if (!selectedIdea || !apiKey) return;
+    // Store apiKey & model into session context (session-scoped)
+    session.setApiKey(apiKey);
+    session.setModel(selectedApi);
+
+    // Create a new session meta and persist initial session object
+    const meta = session.createNewSession(selectedIdea.title);
+
+    // Prepare stored session (do not save raw API key)
+    const stored = {
+      sessionId: meta.sessionId,
+      createdAt: meta.createdAt,
+      expiresAt: meta.expiresAt,
+      idea: {
+        id: selectedIdea.id,
+        title: selectedIdea.title,
+        snippet: selectedIdea.snippet,
+        source: selectedIdea.source,
+        url: selectedIdea.url,
+      },
+      model: selectedApi,
+      meta: {
+        apiKeyMasked: maskKey(apiKey),
+      },
+    };
+
+    try {
+      await saveSession(stored);
+      toast.success("Session started and saved to history.");
+    } catch (err) {
+      console.error("Failed to save session:", err);
+      toast.error("Failed to initialize session in history.");
     }
+
+    onNext(selectedIdea, apiKey, selectedApi);
   };
 
   return (
@@ -165,7 +207,7 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
                 id="api-key"
                 type="password"
                 placeholder="Enter your OpenRouter API key"
-                value={apiKey}
+                value={apiKey ?? ""}
                 onChange={(e) => setApiKey(e.target.value)}
               />
             </div>

@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function HistoryList() {
   const [sessions, setSessions] = useState<StoredSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const router = useRouter();
 
   const load = async () => {
     setLoading(true);
@@ -47,6 +49,18 @@ export default function HistoryList() {
       toast.error("Failed to purge expired sessions.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpen = async (s: StoredSession) => {
+    try {
+      // Place session into a temporary slot so dashboard can pick it up
+      sessionStorage.setItem("reelwriter-open-session", JSON.stringify(s));
+      toast.success("Opening session...");
+      router.push("/");
+    } catch (err) {
+      console.error("Failed to open session:", err);
+      toast.error("Failed to open session.");
     }
   };
 
@@ -117,12 +131,14 @@ export default function HistoryList() {
                   <ExternalLink className="h-4 w-4" />
                 </a>
                 <Button variant="ghost" onClick={() => {
-                  // Open in new tab of the app — route to /history/:id not implemented yet, so copy to clipboard as fallback
                   const payload = JSON.stringify(s, null, 2);
                   navigator.clipboard.writeText(payload);
                   toast.success("Session JSON copied to clipboard (use import later).");
                 }}>
                   Export
+                </Button>
+                <Button variant="outline" onClick={() => handleOpen(s)}>
+                  Open
                 </Button>
                 <Button variant="destructive" onClick={() => handleDelete(s.sessionId)}>
                   <Trash2 className="h-4 w-4" />

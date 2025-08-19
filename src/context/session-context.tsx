@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 
 type SessionMeta = {
   sessionId: string;
@@ -27,6 +26,18 @@ const DEFAULT_EXPIRE_DAYS = 7;
 
 function getExpiresAt(days = DEFAULT_EXPIRE_DAYS) {
   return Date.now() + days * 24 * 60 * 60 * 1000;
+}
+
+function generateId(): string {
+  // Use crypto.randomUUID if available, otherwise fallback to a small unique string
+  try {
+    if (typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function") {
+      return (crypto as any).randomUUID();
+    }
+  } catch {
+    // ignore
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
@@ -86,7 +97,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const createNewSession = (title?: string) => {
     const meta: SessionMeta = {
-      sessionId: uuidv4(),
+      sessionId: generateId(),
       createdAt: Date.now(),
       expiresAt: getExpiresAt(),
       title,

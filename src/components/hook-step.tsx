@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/context/session-context";
+import { getSession, saveSession, type StoredSession } from "@/lib/storage";
 
 interface ContentIdea {
   id: string;
@@ -28,6 +30,7 @@ export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps)
   const [hooks, setHooks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedHook, setSelectedHook] = useState<string | null>(null);
+  const session = useSession();
 
   const generateHooks = async () => {
     setLoading(true);
@@ -50,6 +53,24 @@ export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps)
       const data = await response.json();
       setHooks(data.hooks);
       toast.success("10 new hooks have been generated!");
+
+      // Persist hooks to active session if available
+      if (session.sessionMeta) {
+        try {
+          const existing = await getSession(session.sessionMeta.sessionId);
+          const updated: StoredSession = {
+            sessionId: session.sessionMeta.sessionId,
+            // ensure required fields are present (use existing if present, otherwise use session meta)
+            createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
+            expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
+            ...(existing || {}),
+            hooks: data.hooks,
+          };
+          await saveSession(updated);
+        } catch (err) {
+          console.error("Failed to save hooks to session:", err);
+        }
+      }
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "An error occurred while generating hooks.");
@@ -63,10 +84,26 @@ export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps)
     generateHooks();
   });
 
-  const handleNextClick = () => {
-    if (selectedHook) {
-      onNext(selectedHook);
+  const handleNextClick = async () => {
+    if (!selectedHook) return;
+    // Persist selected hook
+    if (session.sessionMeta) {
+      try {
+        const existing = await getSession(session.sessionMeta.sessionId);
+        const updated: StoredSession = {
+          sessionId: session.sessionMeta.sessionId,
+          createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
+          expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
+          ...(existing || {}),
+          selectedHook,
+        };
+        await saveSession(updated);
+      } catch (err) {
+        console.error("Failed to save selected hook:", err);
+      }
     }
+
+    onNext(selectedHook);
   };
 
   return (

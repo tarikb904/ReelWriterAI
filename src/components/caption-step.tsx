@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Copy, Instagram, Linkedin, Youtube, RefreshCw } from "lucide-react";
 import { Textarea } from "./ui/textarea";
+import { useSession } from "@/context/session-context";
+import { getSession, saveSession, type StoredSession } from "@/lib/storage";
 
 interface CaptionStepProps {
   script: string;
@@ -24,6 +26,24 @@ interface Captions {
 export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps) {
   const [captions, setCaptions] = useState<Captions | null>(null);
   const [loading, setLoading] = useState(false);
+  const session = useSession();
+
+  const persistCaptions = async (caps: Captions) => {
+    if (!session.sessionMeta) return;
+    try {
+      const existing = await getSession(session.sessionMeta.sessionId);
+      const updated: StoredSession = {
+        sessionId: session.sessionMeta.sessionId,
+        createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
+        expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
+        ...(existing || {}),
+        captions: caps,
+      };
+      await saveSession(updated);
+    } catch (err) {
+      console.error("Failed to save captions:", err);
+    }
+  };
 
   const generateCaptions = async () => {
     setLoading(true);
@@ -44,6 +64,7 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
 
       const data = await response.json();
       setCaptions(data);
+      await persistCaptions(data);
       toast.success("Your captions are ready!");
     } catch (error: any) {
       console.error(error);

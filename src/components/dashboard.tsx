@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "./sidebar";
 import { ResearchStep, type ContentIdea } from "./research-step";
 import { HookStep } from "./hook-step";
@@ -17,6 +17,45 @@ export default function Dashboard() {
   const [finalScript, setFinalScript] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("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");
   const [model, setModel] = useState("mistralai/mistral-7b-instruct:free");
+
+  useEffect(() => {
+    // If user chose to open a saved session from History, it'll be placed in sessionStorage
+    const raw = sessionStorage.getItem("reelwriter-open-session");
+    if (raw) {
+      try {
+        const s = JSON.parse(raw);
+        // Map stored session fields back into UI state
+        if (s.idea) {
+          setSelectedIdea({
+            id: s.idea.id || "",
+            title: s.idea.title || "",
+            snippet: s.idea.snippet || "",
+            source: s.idea.source || "",
+            url: s.idea.url || "",
+          });
+        }
+        if (s.selectedHook) setSelectedHook(s.selectedHook);
+        if (s.script?.text) setFinalScript(s.script.text);
+        if (s.model) setModel(s.model);
+        // Determine appropriate step
+        if (s.captions) {
+          setStep("captions");
+        } else if (s.script?.text) {
+          setStep("script");
+        } else if (s.selectedHook) {
+          setStep("hooks");
+        } else if (s.idea) {
+          setStep("hooks");
+        } else {
+          setStep("research");
+        }
+      } catch (err) {
+        console.error("Failed to restore session:", err);
+      } finally {
+        sessionStorage.removeItem("reelwriter-open-session");
+      }
+    }
+  }, []);
 
   const handleProceedToHooks = (
     idea: ContentIdea,
