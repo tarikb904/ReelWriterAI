@@ -21,10 +21,11 @@ interface ScriptStepProps {
   hook: string;
   apiKey: string;
   model: string;
+  onNext: (script: string) => void;
   onBack: () => void;
 }
 
-export function ScriptStep({ idea, hook, apiKey, model, onBack }: ScriptStepProps) {
+export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: ScriptStepProps) {
   const [script, setScript] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -61,6 +62,12 @@ export function ScriptStep({ idea, hook, apiKey, model, onBack }: ScriptStepProp
     generateScript();
   });
 
+  const handleNextClick = () => {
+    if (script) {
+      onNext(script);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
@@ -95,7 +102,7 @@ export function ScriptStep({ idea, hook, apiKey, model, onBack }: ScriptStepProp
               <h3 className="font-semibold text-md mb-1">Selected Hook:</h3>
               <p className="text-sm text-muted-foreground">{hook}</p>
             </div>
-            <Button size="lg" className="w-full" disabled={!script}>
+            <Button size="lg" className="w-full" disabled={!script} onClick={handleNextClick}>
               Step 4: Generate Captions
             </Button>
             <Button size="lg" variant="outline" className="w-full" onClick={onBack}>

@@ -5,6 +5,7 @@ import { Sidebar } from "./sidebar";
 import { ResearchStep, type ContentIdea } from "./research-step";
 import { HookStep } from "./hook-step";
 import { ScriptStep } from "./script-step";
+import { CaptionStep } from "./caption-step";
 import { Toaster } from "@/components/ui/sonner";
 
 type AppStep = "research" | "hooks" | "script" | "captions";
@@ -13,6 +14,7 @@ export default function Dashboard() {
   const [step, setStep] = useState<AppStep>("research");
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
   const [selectedHook, setSelectedHook] = useState<string | null>(null);
+  const [finalScript, setFinalScript] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("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");
   const [model, setModel] = useState("mistralai/mistral-7b-instruct:free");
 
@@ -32,6 +34,11 @@ export default function Dashboard() {
     setStep("script");
   };
 
+  const handleProceedToCaptions = (script: string) => {
+    setFinalScript(script);
+    setStep("captions");
+  };
+
   const handleBackToResearch = () => {
     setStep("research");
     setSelectedIdea(null);
@@ -42,8 +49,24 @@ export default function Dashboard() {
     setSelectedHook(null);
   };
 
+  const handleBackToScript = () => {
+    setStep("script");
+    setFinalScript(null);
+  };
+
   const renderStep = () => {
     switch (step) {
+      case "captions":
+        if (finalScript) {
+          return (
+            <CaptionStep
+              script={finalScript}
+              apiKey={apiKey}
+              model={model}
+              onBack={handleBackToScript}
+            />
+          );
+        }
       case "script":
         if (selectedIdea && selectedHook) {
           return (
@@ -52,6 +75,7 @@ export default function Dashboard() {
               hook={selectedHook}
               apiKey={apiKey}
               model={model}
+              onNext={handleProceedToCaptions}
               onBack={handleBackToHooks}
             />
           );
