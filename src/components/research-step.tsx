@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ContentIdea {
   id: string;
@@ -18,16 +20,25 @@ interface ContentIdea {
 }
 
 const openRouterModels = [
+    // Free Models
+    "mistralai/mistral-7b-instruct:free",
+    "google/gemma-7b-it:free",
+    "nousresearch/nous-hermes-2-mixtral-8x7b-dpo:free",
+    "openchat/openchat-7b:free",
+    // Paid Models
     "openai/gpt-3.5-turbo",
+    "openai/gpt-4o",
     "google/gemini-pro",
-    "mistralai/mistral-7b-instruct",
-    "anthropic/claude-2",
+    "anthropic/claude-3-haiku-20240307",
+    "meta-llama/llama-3-8b-instruct",
+    "meta-llama/llama-3-70b-instruct",
 ];
 
 export function ResearchStep() {
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
+  const [apiKey, setApiKey] = useState("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");
   const [selectedApi, setSelectedApi] = useState(openRouterModels[0]);
 
   const fetchIdeas = async (forceRefresh = false) => {
@@ -46,19 +57,21 @@ export function ResearchStep() {
     }
 
     try {
-      const [redditRes, rssRes] = await Promise.all([
+      const [redditRes, rssRes, hnRes] = await Promise.all([
         fetch("/api/reddit"),
         fetch("/api/rss"),
+        fetch("/api/hackernews"),
       ]);
 
-      if (!redditRes.ok || !rssRes.ok) {
-        throw new Error("Failed to fetch content ideas");
+      if (!redditRes.ok || !rssRes.ok || !hnRes.ok) {
+        throw new Error("Failed to fetch content ideas from one or more sources.");
       }
 
       const redditIdeas = await redditRes.json();
       const rssIdeas = await rssRes.json();
+      const hnIdeas = await hnRes.json();
 
-      const combinedIdeas = [...redditIdeas, ...rssIdeas];
+      const combinedIdeas = [...redditIdeas, ...rssIdeas, ...hnIdeas];
       
       // Deduplicate and shuffle
       const uniqueIdeas = Array.from(new Map(combinedIdeas.map(idea => [idea.title, idea])).values());
@@ -138,7 +151,17 @@ export function ResearchStep() {
           </CardHeader>
           <CardContent className="grid gap-6">
             <div className="grid gap-2">
-              <label htmlFor="api-select" className="text-sm font-medium">AI Model</label>
+              <Label htmlFor="api-key">OpenRouter API Key</Label>
+              <Input
+                id="api-key"
+                type="password"
+                placeholder="Enter your OpenRouter API key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="api-select" className="text-sm font-medium">AI Model</Label>
               <Select value={selectedApi} onValueChange={setSelectedApi}>
                 <SelectTrigger id="api-select">
                   <SelectValue placeholder="Select an AI model" />
@@ -150,7 +173,7 @@ export function ResearchStep() {
                 </SelectContent>
               </Select>
             </div>
-            <Button size="lg" className="w-full" disabled={!selectedIdea}>
+            <Button size="lg" className="w-full" disabled={!selectedIdea || !apiKey}>
               Step 2: Generate Hooks
             </Button>
           </CardContent>
