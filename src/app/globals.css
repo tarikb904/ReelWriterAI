@@ -102,7 +102,7 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/60 dark:bg-white/6 backdrop-blur-md border border-border rounded-2xl;
+    @apply bg-white/60 dark:bg-white/10 backdrop-blur-md border border-border rounded-2xl;
   }
 
   .vibrant-badge {
