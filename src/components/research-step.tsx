@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, ExternalLink } from "lucide-react";
+import { RefreshCw, ExternalLink, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner"; // Fixes errors 1,2,3
+import { useSession } from "@/context/session-context";
+import { toast } from "sonner";
 
 export interface ContentIdea {
   id: string;
@@ -19,7 +20,7 @@ export interface ContentIdea {
 interface ResearchStepProps {
   apiKey: string;
   model: string;
-  onNext: (idea: ContentIdea) => void;
+  onNext: (idea: ContentIdea, apiKey?: string, model?: string) => void;
 }
 
 const STOPWORDS = new Set([
@@ -61,9 +62,13 @@ Begin generating the ideas now.
   const [improving, setImproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Radio selection: either topic word or "custom"
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  // Custom idea text
+  const [customIdea, setCustomIdea] = useState<string>("");
+
   const fetchIdeas = async () => {
     setLoading(true);
-    setSelectedIdea(null);
     setError(null);
     try {
       const res = await fetch("/api/ai-research", {
@@ -96,16 +101,51 @@ Begin generating the ideas now.
         body: JSON.stringify({ prompt, apiKey, model }),
       });
       if (!res.ok) {
-        toast.error("Failed to improve prompt"); // error 1 fixed by import
+        toast.error("Failed to improve prompt");
       } else {
         const data = await res.json();
         if (data.improvedPrompt) {
           setPrompt(data.improvedPrompt);
-          toast.success("Prompt improved!"); // error 2 fixed by import
+          toast.success("Prompt improved!");
         }
       }
     } catch {
-      toast.error("Failed to improve prompt"); // error 3 fixed by import
+      toast.error("Failed to improve prompt");
+    } finally {
+      setImproving(false);
+    }
+  };
+
+  const improveCustomIdea = async () => {
+    if (!customIdea.trim()) {
+      toast.error("Please enter your custom idea first.");
+      return;
+    }
+    setImproving(true);
+    try {
+      const promptForImprovement = `
+You are an expert content strategist. Improve the following viral content idea to make it more engaging, clear, and compelling:
+
+"${customIdea}"
+`;
+      const res = await fetch("/api/ai-research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: promptForImprovement, apiKey, model }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to improve idea");
+      } else {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].title) {
+          setCustomIdea(data[0].title);
+          toast.success("Idea improved!");
+        } else {
+          toast.error("Could not parse improved idea");
+        }
+      }
+    } catch {
+      toast.error("Failed to improve idea");
     } finally {
       setImproving(false);
     }
@@ -118,6 +158,31 @@ Begin generating the ideas now.
     const t = filterTopic.toLowerCase();
     return ideas.filter((i) => (i.title + " " + i.snippet).toLowerCase().includes(t));
   }, [ideas, filterTopic]);
+
+  const handleGenerateHook = () => {
+    let ideaToUse: ContentIdea | null = null;
+    if (selectedTopic === "custom") {
+      if (!customIdea.trim()) {
+        toast.error("Please enter your custom idea.");
+        return;
+      }
+      ideaToUse = {
+        id: "custom",
+        title: customIdea.trim(),
+        snippet: customIdea.trim(),
+        source: "Custom Idea",
+        url: "",
+      };
+    } else if (selectedTopic) {
+      // Find first idea matching the selected topic word
+      ideaToUse = ideas.find(i => (i.title + " " + i.snippet).toLowerCase().includes(selectedTopic.toLowerCase())) || null;
+    }
+    if (!ideaToUse) {
+      toast.error("Please select a topic or enter a custom idea.");
+      return;
+    }
+    onNext(ideaToUse);
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-8">
@@ -137,7 +202,7 @@ Begin generating the ideas now.
             <Button size="sm" onClick={improvePrompt} disabled={improving}>
               {improving ? "Improving..." : "Improve Prompt"}
             </Button>
-            <Button size="sm" variant="default" onClick={fetchIdeas} disabled={loading}> {/* error 4 fixed: variant 'default' */}
+            <Button size="sm" variant="default" onClick={fetchIdeas} disabled={loading}>
               {loading ? "Researching..." : "Start Research"}
             </Button>
           </div>
@@ -147,26 +212,60 @@ Begin generating the ideas now.
         <div>
           <h2 className="text-xl font-semibold mb-2">Viral Content Ideas</h2>
 
-          {/* Topics */}
+          {/* Topics with radio buttons */}
           <div className="mb-4">
-            <h3 className="text-sm font-medium mb-2">Trending Topics</h3>
-            <div className="flex flex-wrap gap-2">
+            <h3 className="text-sm font-medium mb-2">Select a Topic or Custom Idea</h3>
+            <div className="flex flex-wrap gap-3 items-center">
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="topic"
+                  value="custom"
+                  checked={selectedTopic === "custom"}
+                  onChange={() => setSelectedTopic("custom")}
+                  className="mr-2"
+                />
+                Custom Idea
+              </label>
               {topics.map((t) => (
-                <button
-                  key={t.word}
-                  onClick={() => setFilterTopic(t.word === filterTopic ? null : t.word)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-sm cursor-pointer transition",
-                    filterTopic === t.word ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted/80"
-                  )}
-                >
-                  {t.word} <span className="ml-2 text-xs text-muted-foreground">({t.count})</span>
-                </button>
+                <label key={t.word} className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="topic"
+                    value={t.word}
+                    checked={selectedTopic === t.word}
+                    onChange={() => setSelectedTopic(t.word)}
+                    className="mr-2"
+                  />
+                  {t.word} <span className="ml-1 text-xs text-muted-foreground">({t.count})</span>
+                </label>
               ))}
-              {topics.length === 0 && <span className="text-sm text-muted-foreground">No clear topics yet</span>}
             </div>
           </div>
 
+          {/* Custom idea editor */}
+          {selectedTopic === "custom" && (
+            <div className="mb-4 relative">
+              <textarea
+                rows={4}
+                className="w-full rounded-md border border-border bg-background p-3 text-sm text-foreground resize-y pr-10"
+                placeholder="Enter your custom viral content idea here..."
+                value={customIdea}
+                onChange={(e) => setCustomIdea(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={improveCustomIdea}
+                disabled={improving}
+                title="Improve the idea"
+                className="absolute top-2 right-2 p-1 rounded hover:bg-muted/50 transition"
+              >
+                <Cpu className="h-5 w-5 text-primary" />
+              </button>
+            </div>
+          )}
+
+          {/* Viral ideas list */}
           <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-4">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
@@ -182,7 +281,7 @@ Begin generating the ideas now.
                 </Card>
               ))
             ) : (
-              filteredIdeas.map((idea) => (
+              ideas.map((idea) => (
                 <Card
                   key={idea.id}
                   className={cn(
@@ -206,6 +305,17 @@ Begin generating the ideas now.
                 </Card>
               ))
             )}
+          </div>
+
+          <div className="mt-4">
+            <Button
+              size="lg"
+              className="w-full"
+              disabled={!(selectedTopic && (selectedTopic !== "custom" || customIdea.trim() !== ""))}
+              onClick={handleGenerateHook}
+            >
+              Generate Hook
+            </Button>
           </div>
         </div>
       </div>
