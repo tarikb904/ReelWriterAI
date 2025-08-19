@@ -20,10 +20,11 @@ interface HookStepProps {
   idea: ContentIdea;
   apiKey: string;
   model: string;
+  onNext: (hook: string) => void;
   onBack: () => void;
 }
 
-export function HookStep({ idea, apiKey, model, onBack }: HookStepProps) {
+export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps) {
   const [hooks, setHooks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedHook, setSelectedHook] = useState<string | null>(null);
@@ -61,6 +62,12 @@ export function HookStep({ idea, apiKey, model, onBack }: HookStepProps) {
   useState(() => {
     generateHooks();
   });
+
+  const handleNextClick = () => {
+    if (selectedHook) {
+      onNext(selectedHook);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -105,7 +112,7 @@ export function HookStep({ idea, apiKey, model, onBack }: HookStepProps) {
               <h3 className="font-semibold text-md mb-2">{idea.title}</h3>
               <p className="text-sm text-muted-foreground">{idea.snippet}</p>
             </div>
-            <Button size="lg" className="w-full" disabled={!selectedHook}>
+            <Button size="lg" className="w-full" disabled={!selectedHook} onClick={handleNextClick}>
               Step 3: Generate Script
             </Button>
             <Button size="lg" variant="outline" className="w-full" onClick={onBack}>
