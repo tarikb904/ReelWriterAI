@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, ExternalLink, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -36,7 +37,10 @@ export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
     setSelectedIdeaId(null);
     setCustomIdea("");
     try {
-      const res = await fetch("/api/research", { method: "GET", cache: "no-store" });
+      const res = await fetch("/api/research", {
+        method: "GET",
+        cache: "no-store",
+      });
       if (!res.ok) {
         const errData = await res.json();
         setError(errData.error || "Failed to fetch viral content");
@@ -138,12 +142,12 @@ You are an expert content strategist. Improve the following viral content idea t
             Array.from({ length: 6 }).map((_, i) => (
               <Card key={i}>
                 <CardHeader>
-                  <div className="h-5 w-3/4 bg-gray-300 rounded animate-pulse" />
-                  <div className="h-4 w-1/4 mt-1 bg-gray-300 rounded animate-pulse" />
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/4 mt-1" />
                 </CardHeader>
                 <CardContent>
-                  <div className="h-4 w-full bg-gray-300 rounded animate-pulse" />
-                  <div className="h-4 w-5/6 mt-2 bg-gray-300 rounded animate-pulse" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6 mt-2" />
                 </CardContent>
               </Card>
             ))
@@ -181,7 +185,7 @@ You are an expert content strategist. Improve the following viral content idea t
           {/* Custom idea input */}
           <Card
             className={cn(
-              "relative cursor-pointer transition-all hover:shadow-lg",
+              "cursor-pointer transition-all hover:shadow-lg",
               selectedIdeaId === "custom" && "border-primary ring-2 ring-primary"
             )}
             onClick={() => setSelectedIdeaId("custom")}
@@ -190,38 +194,37 @@ You are an expert content strategist. Improve the following viral content idea t
               <CardTitle className="text-lg">Or enter your own idea</CardTitle>
             </CardHeader>
             <CardContent>
-              <textarea
-                rows={4}
-                className="w-full rounded-md border border-border bg-background p-3 text-sm text-foreground resize-y pr-12"
-                placeholder="Enter your custom viral content idea here..."
-                value={customIdea}
-                onChange={(e) => {
-                  setCustomIdea(e.target.value);
-                  setSelectedIdeaId("custom");
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedIdeaId("custom");
-                }}
-              />
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="absolute top-3 right-3 h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  improveCustomIdea();
-                }}
-                disabled={improving || !customIdea.trim()}
-                aria-label="Improve with AI"
-              >
-                {improving ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Cpu className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="relative">
+                <textarea
+                  rows={4}
+                  className="w-full rounded-md border border-border bg-background p-3 text-sm text-foreground resize-y pr-10"
+                  placeholder="Enter your custom viral content idea here..."
+                  value={customIdea}
+                  onChange={(e) => {
+                    setCustomIdea(e.target.value);
+                    setSelectedIdeaId("custom");
+                  }}
+                  onClick={() => setSelectedIdeaId("custom")}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="absolute top-2 right-2 h-8 w-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    improveCustomIdea();
+                  }}
+                  disabled={improving || !customIdea.trim()}
+                  aria-label="Improve with AI"
+                >
+                  {improving ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Cpu className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
