@@ -8,19 +8,20 @@ import { HookStep } from "./hook-step";
 import { ScriptStep } from "./script-step";
 import { CaptionStep } from "./caption-step";
 import { Toaster } from "@/components/ui/sonner";
+import { useSession } from "@/context/session-context";
 
 type AppStep = "apiKey" | "research" | "hooks" | "script" | "captions";
 
 export default function Dashboard() {
-  const [step, setStep] = useState<AppStep>("apiKey");
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const session = useSession();
+  const [step, setStep] = useState<AppStep>(session.apiKey ? "research" : "apiKey");
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
   const [selectedHook, setSelectedHook] = useState<string | null>(null);
   const [finalScript, setFinalScript] = useState<string | null>(null);
-  const [model, setModel] = useState("mistralai/mistral-7b-instruct:free");
+  const [model, setModel] = useState(session.model || "mistralai/mistral-7b-instruct:free");
 
   const handleApiKeyValidated = (key: string) => {
-    setApiKey(key);
+    session.setApiKey(key);
     setStep("research");
   };
 
@@ -30,7 +31,7 @@ export default function Dashboard() {
     selectedModel?: string
   ) => {
     setSelectedIdea(idea);
-    if (apiKeyOverride) setApiKey(apiKeyOverride);
+    if (apiKeyOverride) session.setApiKey(apiKeyOverride);
     if (selectedModel) setModel(selectedModel);
     setStep("hooks");
   };
@@ -47,7 +48,7 @@ export default function Dashboard() {
 
   const handleBackToApiKey = () => {
     setStep("apiKey");
-    setApiKey(null);
+    session.setApiKey(null);
   };
 
   const handleBackToResearch = () => {
@@ -70,42 +71,42 @@ export default function Dashboard() {
       case "apiKey":
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
       case "research":
-        if (apiKey) {
-          return <ResearchStep apiKey={apiKey} onNext={handleProceedToHooks} />;
+        if (session.apiKey) {
+          return <ResearchStep apiKey={session.apiKey} model={model} onNext={handleProceedToHooks} />;
         }
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
       case "hooks":
-        if (selectedIdea && apiKey) {
+        if (selectedIdea && session.apiKey) {
           return (
             <HookStep
               idea={selectedIdea}
-              apiKey={apiKey}
+              apiKey={session.apiKey}
               model={model}
               onNext={handleProceedToScript}
               onBack={handleBackToResearch}
             />
           );
         }
-        return <ResearchStep apiKey={apiKey ?? ""} onNext={handleProceedToHooks} />;
+        return <ResearchStep apiKey={session.apiKey ?? ""} model={model} onNext={handleProceedToHooks} />;
       case "script":
-        if (selectedIdea && selectedHook && apiKey) {
+        if (selectedIdea && selectedHook && session.apiKey) {
           return (
             <ScriptStep
               idea={selectedIdea}
               hook={selectedHook}
-              apiKey={apiKey}
+              apiKey={session.apiKey}
               model={model}
               onNext={handleProceedToCaptions}
               onBack={handleBackToHooks}
             />
           );
         }
-        return <HookStep idea={selectedIdea!} apiKey={apiKey ?? ""} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />;
+        return <HookStep idea={selectedIdea!} apiKey={session.apiKey ?? ""} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />;
       case "captions":
-        if (finalScript && apiKey) {
-          return <CaptionStep script={finalScript} apiKey={apiKey} model={model} onBack={handleBackToScript} />;
+        if (finalScript && session.apiKey) {
+          return <CaptionStep script={finalScript} apiKey={session.apiKey} model={model} onBack={handleBackToScript} />;
         }
-        return <ScriptStep idea={selectedIdea!} hook={selectedHook!} apiKey={apiKey ?? ""} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />;
+        return <ScriptStep idea={selectedIdea!} hook={selectedHook!} apiKey={session.apiKey ?? ""} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />;
       default:
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
     }
