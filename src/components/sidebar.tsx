@@ -32,13 +32,16 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-      <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+    <aside className="fixed inset-y-0 left-0 z-10 hidden w-20 flex-col border-r bg-background sm:flex">
+      <nav className="flex flex-col items-center gap-4 px-3 sm:py-6">
         <Link
           href="#"
-          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
+          className="group flex h-12 w-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-600 to-teal-400 shadow-md"
         >
-          <Image src="/logo.png" alt="ReelWriterAI Logo" width={24} height={24} />
+          {/* Logo placed center; keep using provided logo.png but inside vibrant container */}
+          <div className="relative h-8 w-8 rounded-md overflow-hidden">
+            <Image src="/logo.png" alt="ReelWriterAI Logo" width={32} height={32} className="object-contain" />
+          </div>
           <span className="sr-only">ReelWriterAI</span>
         </Link>
         <TooltipProvider>
@@ -48,7 +51,7 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
+                    "flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-9 md:w-9",
                     pathname === item.href && "bg-accent text-accent-foreground"
                   )}
                 >
@@ -61,13 +64,13 @@ export function Sidebar() {
           ))}
         </TooltipProvider>
       </nav>
-      <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
+      <nav className="mt-auto flex flex-col items-center gap-4 px-3 sm:py-6">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
                 href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-9 md:w-9"
               >
                 <Settings className="h-5 w-5" />
                 <span className="sr-only">Settings</span>
