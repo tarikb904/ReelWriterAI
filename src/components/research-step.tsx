@@ -11,12 +11,16 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface ContentIdea {
+export interface ContentIdea {
   id: string;
   title: string;
   snippet: string;
   source: string;
   url: string;
+}
+
+interface ResearchStepProps {
+  onNext: (idea: ContentIdea, apiKey: string, model: string) => void;
 }
 
 const openRouterModels = [
@@ -34,7 +38,7 @@ const openRouterModels = [
     "meta-llama/llama-3-70b-instruct",
 ];
 
-export function ResearchStep() {
+export function ResearchStep({ onNext }: ResearchStepProps) {
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
@@ -73,7 +77,6 @@ export function ResearchStep() {
 
       const combinedIdeas = [...redditIdeas, ...rssIdeas, ...hnIdeas];
       
-      // Deduplicate and shuffle
       const uniqueIdeas = Array.from(new Map(combinedIdeas.map(idea => [idea.title, idea])).values());
       const shuffledIdeas = uniqueIdeas.sort(() => 0.5 - Math.random()).slice(0, 50);
 
@@ -91,6 +94,12 @@ export function ResearchStep() {
   useEffect(() => {
     fetchIdeas();
   }, []);
+
+  const handleNextClick = () => {
+    if (selectedIdea && apiKey) {
+      onNext(selectedIdea, apiKey, selectedApi);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -173,7 +182,7 @@ export function ResearchStep() {
                 </SelectContent>
               </Select>
             </div>
-            <Button size="lg" className="w-full" disabled={!selectedIdea || !apiKey}>
+            <Button size="lg" className="w-full" disabled={!selectedIdea || !apiKey} onClick={handleNextClick}>
               Step 2: Generate Hooks
             </Button>
           </CardContent>
