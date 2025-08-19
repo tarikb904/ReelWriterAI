@@ -2,29 +2,35 @@
 
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
+import { ApiKeyStep } from "./api-key-step";
 import { ResearchStep, type ContentIdea } from "./research-step";
 import { HookStep } from "./hook-step";
 import { ScriptStep } from "./script-step";
 import { CaptionStep } from "./caption-step";
 import { Toaster } from "@/components/ui/sonner";
 
-type AppStep = "research" | "hooks" | "script" | "captions";
+type AppStep = "apiKey" | "research" | "hooks" | "script" | "captions";
 
 export default function Dashboard() {
-  const [step, setStep] = useState<AppStep>("research");
+  const [step, setStep] = useState<AppStep>("apiKey");
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
   const [selectedHook, setSelectedHook] = useState<string | null>(null);
   const [finalScript, setFinalScript] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState("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");
   const [model, setModel] = useState("mistralai/mistral-7b-instruct:free");
+
+  const handleApiKeyValidated = (key: string) => {
+    setApiKey(key);
+    setStep("research");
+  };
 
   const handleProceedToHooks = (
     idea: ContentIdea,
-    apiKey?: string,
+    apiKeyOverride?: string,
     selectedModel?: string
   ) => {
     setSelectedIdea(idea);
-    if (apiKey) setApiKey(apiKey);
+    if (apiKeyOverride) setApiKey(apiKeyOverride);
     if (selectedModel) setModel(selectedModel);
     setStep("hooks");
   };
@@ -37,6 +43,11 @@ export default function Dashboard() {
   const handleProceedToCaptions = (script: string) => {
     setFinalScript(script);
     setStep("captions");
+  };
+
+  const handleBackToApiKey = () => {
+    setStep("apiKey");
+    setApiKey(null);
   };
 
   const handleBackToResearch = () => {
@@ -56,19 +67,28 @@ export default function Dashboard() {
 
   const renderStep = () => {
     switch (step) {
-      case "captions":
-        if (finalScript) {
+      case "apiKey":
+        return <ApiKeyStep onValidated={handleApiKeyValidated} />;
+      case "research":
+        if (apiKey) {
+          return <ResearchStep apiKey={apiKey} onNext={handleProceedToHooks} />;
+        }
+        return <ApiKeyStep onValidated={handleApiKeyValidated} />;
+      case "hooks":
+        if (selectedIdea && apiKey) {
           return (
-            <CaptionStep
-              script={finalScript}
+            <HookStep
+              idea={selectedIdea}
               apiKey={apiKey}
               model={model}
-              onBack={handleBackToScript}
+              onNext={handleProceedToScript}
+              onBack={handleBackToResearch}
             />
           );
         }
+        return <ResearchStep apiKey={apiKey ?? ""} onNext={handleProceedToHooks} />;
       case "script":
-        if (selectedIdea && selectedHook) {
+        if (selectedIdea && selectedHook && apiKey) {
           return (
             <ScriptStep
               idea={selectedIdea}
@@ -80,36 +100,14 @@ export default function Dashboard() {
             />
           );
         }
-      case "hooks":
-        if (selectedIdea) {
-          return (
-            <HookStep
-              idea={selectedIdea}
-              apiKey={apiKey}
-              model={model}
-              onNext={handleProceedToScript}
-              onBack={handleBackToResearch}
-            />
-          );
-        }
-      case "research":
-      default:
-        return <ResearchStep onNext={handleProceedToHooks} />;
-    }
-  };
-
-  const getTitleForStep = (currentStep: AppStep) => {
-    switch (currentStep) {
-      case "research":
-        return "Step 1: Viral Content Research";
-      case "hooks":
-        return "Step 2: Hook Generation";
-      case "script":
-        return "Step 3: Script Writing";
+        return <HookStep idea={selectedIdea!} apiKey={apiKey ?? ""} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />;
       case "captions":
-        return "Step 4: Caption Generation";
+        if (finalScript && apiKey) {
+          return <CaptionStep script={finalScript} apiKey={apiKey} model={model} onBack={handleBackToScript} />;
+        }
+        return <ScriptStep idea={selectedIdea!} hook={selectedHook!} apiKey={apiKey ?? ""} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />;
       default:
-        return "ReelWriterAI";
+        return <ApiKeyStep onValidated={handleApiKeyValidated} />;
     }
   };
 
@@ -118,7 +116,9 @@ export default function Dashboard() {
       <Sidebar />
       <main className="flex flex-1 flex-col gap-4 p-4 md:p-8 md:pl-24">
         <div className="flex items-center">
-          <h1 className="text-3xl font-semibold">{getTitleForStep(step)}</h1>
+          <h1 className="text-3xl font-semibold">
+            {step === "apiKey" ? "Enter OpenRouter API Key" : `Step ${["apiKey", "research", "hooks", "script", "captions"].indexOf(step)}: ${step.charAt(0).toUpperCase() + step.slice(1)}`}
+          </h1>
         </div>
         {renderStep()}
       </main>

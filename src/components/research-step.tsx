@@ -16,7 +16,8 @@ export interface ContentIdea {
 }
 
 interface ResearchStepProps {
-  onNext: (idea: ContentIdea, apiKey?: string, model?: string) => void;
+  apiKey: string;
+  onNext: (idea: ContentIdea) => void;
 }
 
 const STOPWORDS = new Set([
@@ -37,7 +38,7 @@ function extractTopics(ideas: ContentIdea[], topN = 8) {
   return entries.slice(0, topN).map(([word, count]) => ({ word, count }));
 }
 
-export function ResearchStep({ onNext }: ResearchStepProps) {
+export function ResearchStep({ apiKey, onNext }: ResearchStepProps) {
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
@@ -47,6 +48,7 @@ export function ResearchStep({ onNext }: ResearchStepProps) {
     setLoading(true);
     setSelectedIdea(null);
     try {
+      // Pass apiKey if needed in future; currently research API does not require it
       const res = await fetch("/api/research");
       if (!res.ok) throw new Error("Failed to fetch viral content");
       const data = await res.json();
