@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { ResearchStep, type ContentIdea } from "./research-step";
 import { HookStep } from "./hook-step";
@@ -18,53 +18,14 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState("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");
   const [model, setModel] = useState("mistralai/mistral-7b-instruct:free");
 
-  useEffect(() => {
-    // If user chose to open a saved session from History, it'll be placed in sessionStorage
-    const raw = sessionStorage.getItem("reelwriter-open-session");
-    if (raw) {
-      try {
-        const s = JSON.parse(raw);
-        // Map stored session fields back into UI state
-        if (s.idea) {
-          setSelectedIdea({
-            id: s.idea.id || "",
-            title: s.idea.title || "",
-            snippet: s.idea.snippet || "",
-            source: s.idea.source || "",
-            url: s.idea.url || "",
-          });
-        }
-        if (s.selectedHook) setSelectedHook(s.selectedHook);
-        if (s.script?.text) setFinalScript(s.script.text);
-        if (s.model) setModel(s.model);
-        // Determine appropriate step
-        if (s.captions) {
-          setStep("captions");
-        } else if (s.script?.text) {
-          setStep("script");
-        } else if (s.selectedHook) {
-          setStep("hooks");
-        } else if (s.idea) {
-          setStep("hooks");
-        } else {
-          setStep("research");
-        }
-      } catch (err) {
-        console.error("Failed to restore session:", err);
-      } finally {
-        sessionStorage.removeItem("reelwriter-open-session");
-      }
-    }
-  }, []);
-
   const handleProceedToHooks = (
     idea: ContentIdea,
-    key: string,
-    selectedModel: string
+    apiKey?: string,
+    selectedModel?: string
   ) => {
     setSelectedIdea(idea);
-    setApiKey(key);
-    setModel(selectedModel);
+    if (apiKey) setApiKey(apiKey);
+    if (selectedModel) setModel(selectedModel);
     setStep("hooks");
   };
 
@@ -155,7 +116,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Sidebar />
-      <main className="flex flex-1 flex-col gap-4 p-4 sm:pl-14 md:gap-8 md:p-8">
+      <main className="flex flex-1 flex-col gap-4 p-4 md:p-8 md:pl-24">
         <div className="flex items-center">
           <h1 className="text-3xl font-semibold">{getTitleForStep(step)}</h1>
         </div>
