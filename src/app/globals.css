@@ -2,122 +2,137 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens and utilities for a vibrant, polished UI */
 @layer base {
   :root {
-    /* Vibrant palette inspired by modern Apple-like gradients */
-    --background: 220 16% 98%;
-    --foreground: 220 12% 8%;
+    /* Colors (HSL) */
+    --bg-h: 222;
+    --bg-s: 20%;
+    --bg-l: 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 12% 8%;
+    --foreground-h: 220;
+    --foreground-s: 12%;
+    --foreground-l: 8%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 12% 8%;
+    --primary-h: 268;
+    --primary-s: 88%;
+    --primary-l: 60%;
 
-    --primary: 263 92% 60%; /* vibrant purple */
-    --primary-foreground: 210 40% 98%;
+    --accent-h: 190;
+    --accent-s: 85%;
+    --accent-l: 48%;
 
-    --secondary: 195 85% 48%; /* teal */
-    --secondary-foreground: 210 40% 98%;
+    --muted-h: 215;
+    --muted-s: 25%;
+    --muted-l: 95%;
 
-    --muted: 215 25% 95%;
-    --muted-foreground: 215 20% 45%;
+    --card-l: 100%;
+    --card-foreground-l: 8%;
 
-    --accent: 260 80% 65%;
-    --accent-foreground: 210 40% 98%;
+    /* Gradient stops as CSS variables for easy re-use */
+    --grad-1: 262 92% 60%;
+    --grad-2: 220 90% 60%;
+    --grad-3: 195 85% 48%;
 
-    --destructive: 0 78% 52%;
-    --destructive-foreground: 210 40% 98%;
+    --glass-light: rgba(255,255,255,0.6);
+    --glass-dark: rgba(255,255,255,0.06);
 
-    --border: 220 16% 92%;
-    --input: 220 16% 96%;
-    --ring: 263 92% 60%;
+    --radius-lg: 1rem;
+    --radius-md: 0.75rem;
+    --radius-sm: 0.5rem;
 
-    --chart-1: 265 80% 60%;
-    --chart-2: 170 70% 45%;
-    --chart-3: 40 90% 55%;
-    --chart-4: 300 75% 60%;
-    --chart-5: 340 75% 55%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 260 90% 98%;
-    --sidebar-foreground: 260 12% 15%;
-    --sidebar-primary: 263 92% 60%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 195 85% 48%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 220 16% 92%;
-    --sidebar-ring: 263 92% 60%;
+    /* Border color variable (used below) */
+    --border-color: 220 16% 92%;
   }
 
-  /* Dark theme */
+  body {
+    --background: var(--bg-h) var(--bg-s) var(--bg-l);
+    --foreground: var(--foreground-h) var(--foreground-s) var(--foreground-l);
+    @apply antialiased;
+    font-synthesis: none;
+  }
+
+  /* Dark theme overrides */
   .dark {
-    --background: 226 34% 6%;
-    --foreground: 220 12% 96%;
+    --bg-h: 226;
+    --bg-s: 34%;
+    --bg-l: 6%;
 
-    --card: 226 34% 8%;
-    --card-foreground: 220 12% 96%;
+    --foreground-h: 220;
+    --foreground-s: 12%;
+    --foreground-l: 96%;
 
-    --popover: 226 34% 8%;
-    --popover-foreground: 220 12% 96%;
+    --glass-light: rgba(255,255,255,0.06);
+    --glass-dark: rgba(0,0,0,0.45);
 
-    --primary: 277 90% 64%;
-    --primary-foreground: 220 12% 96%;
+    --border-color: 220 14% 14%;
+  }
 
-    --secondary: 190 90% 45%;
-    --secondary-foreground: 220 12% 96%;
-
-    --muted: 220 16% 16%;
-    --muted-foreground: 215 20% 72%;
-
-    --accent: 275 80% 62%;
-    --accent-foreground: 220 12% 96%;
-
-    --destructive: 0 65% 40%;
-    --destructive-foreground: 220 12% 96%;
-
-    --border: 220 14% 14%;
-    --input: 220 14% 14%;
-    --ring: 277 90% 64%;
-
-    --chart-1: 265 80% 60%;
-    --chart-2: 170 70% 45%;
-    --chart-3: 40 90% 55%;
-    --chart-4: 300 75% 60%;
-    --chart-5: 340 75% 55%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 226 34% 6%;
-    --sidebar-foreground: 220 12% 96%;
-    --sidebar-primary: 277 90% 64%;
-    --sidebar-primary-foreground: 220 12% 96%;
-    --sidebar-accent: 190 90% 45%;
-    --sidebar-accent-foreground: 220 12% 96%;
-    --sidebar-border: 220 14% 14%;
-    --sidebar-ring: 277 90% 64%;
+  /* Ensure all elements use the design border color when a border is applied */
+  * {
+    border-color: hsl(var(--border-color));
   }
 }
 
+/* Component utilities and polished surfaces */
 @layer components {
   .glass-card {
-    @apply bg-white/60 dark:bg-white/10 backdrop-blur-md border border-border rounded-2xl;
+    /* translucent frosted glass */
+    background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.55));
+    border: 1px solid hsl(var(--border-color));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
   }
 
-  .vibrant-badge {
-    background: linear-gradient(135deg, rgba(139,92,246,0.95) 0%, rgba(79,70,229,0.95) 50%, rgba(34,211,238,0.95) 100%);
+  /* dark mode glass */
+  .dark .glass-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    border: 1px solid hsl(var(--border-color));
+  }
+
+  .primary-gradient {
+    background: linear-gradient(135deg,
+      hsl(var(--grad-1)),
+      hsl(var(--grad-2) / 0.95),
+      hsl(var(--grad-3)));
     color: white;
-    @apply px-3 py-1 rounded-full text-sm font-medium shadow-md;
+  }
+
+  .logo-gradient {
+    background: linear-gradient(135deg, rgba(139,92,246,1) 0%, rgba(79,70,229,1) 50%, rgba(34,211,238,1) 100%);
+  }
+
+  .elevated {
+    box-shadow:
+      0 6px 18px rgba(16,24,40,0.08),
+      0 2px 6px rgba(16,24,40,0.06);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .elevated:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 18px 40px rgba(16,24,40,0.12),
+      0 6px 12px rgba(16,24,40,0.08);
+  }
+
+  /* subtle badge styling used for source badges */
+  .source-badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted/60 text-muted-foreground;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+/* Utilities for subtle shimmer skeleton */
+@layer utilities {
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.06) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
   }
-  body {
-    @apply bg-background text-foreground antialiased;
-    font-synthesis: none;
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 }
