@@ -18,7 +18,10 @@ export default function HistoryList() {
     setLoading(true);
     try {
       const items = await listSessions();
-      setSessions(items);
+      // Filter sessions to only those not expired (7 days)
+      const now = Date.now();
+      const validSessions = items.filter(s => !s.expiresAt || s.expiresAt > now);
+      setSessions(validSessions);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load history.");
@@ -54,7 +57,7 @@ export default function HistoryList() {
 
   const handleOpen = async (s: StoredSession) => {
     try {
-      // Place session into a temporary slot so dashboard can pick it up
+      // Store session in sessionStorage for dashboard to pick up
       sessionStorage.setItem("reelwriter-open-session", JSON.stringify(s));
       toast.success("Opening session...");
       router.push("/");
@@ -71,6 +74,9 @@ export default function HistoryList() {
       if (s.idea?.title && s.idea.title.toLowerCase().includes(q)) return true;
       if (s.script?.text && s.script.text.toLowerCase().includes(q)) return true;
       if (s.selectedHook && String(s.selectedHook).toLowerCase().includes(q)) return true;
+      if (s.captions?.instagram && s.captions.instagram.toLowerCase().includes(q)) return true;
+      if (s.captions?.linkedin && s.captions.linkedin.toLowerCase().includes(q)) return true;
+      if (s.captions?.youtubeTitles && s.captions.youtubeTitles.some(title => title.toLowerCase().includes(q))) return true;
       return false;
     });
   }, [sessions, query]);
@@ -78,12 +84,12 @@ export default function HistoryList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-2xl font-semibold">History</h2>
+        <h2 className="text-2xl font-semibold">History (Last 7 Days)</h2>
         <div className="flex items-center gap-2">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter by title, script or hook..."
+            placeholder="Filter by title, script, hook, or captions..."
             className="rounded-md border px-3 py-2 text-sm bg-background"
           />
           <Button variant="outline" onClick={load} disabled={loading}>
@@ -156,7 +162,13 @@ export default function HistoryList() {
                   <p className="line-clamp-3 text-sm text-muted-foreground whitespace-pre-wrap">{s.script.text}</p>
                 )}
                 {s.captions?.instagram && (
-                  <p className="text-xs text-muted-foreground">Instagram generated — click Export to copy full session.</p>
+                  <p className="text-xs text-muted-foreground">Instagram caption generated</p>
+                )}
+                {s.captions?.linkedin && (
+                  <p className="text-xs text-muted-foreground">LinkedIn caption generated</p>
+                )}
+                {s.captions?.youtubeTitles && s.captions.youtubeTitles.length > 0 && (
+                  <p className="text-xs text-muted-foreground">YouTube titles generated</p>
                 )}
               </div>
             </CardContent>
