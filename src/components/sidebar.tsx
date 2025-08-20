@@ -29,42 +29,67 @@ const FREE_MODELS = [
   {
     id: "openai/gpt-oss-20b",
     label: "OpenAI: gpt-oss-20b (free)",
+    keyType: "openAiApiKey",
   },
   {
     id: "z-ai/glm-4.5-air",
     label: "Z.AI: GLM 4.5 Air (free)",
+    keyType: "openRouterApiKey",
   },
   {
     id: "qwen/qwen3-coder",
     label: "Qwen: Qwen3 Coder (free)",
+    keyType: "openRouterApiKey",
   },
   {
     id: "moonshotai/kimi-k2",
     label: "MoonshotAI: Kimi K2 (free)",
+    keyType: "openRouterApiKey",
   },
   {
     id: "cognitivecomputations/venice-uncensored",
     label: "Venice: Uncensored (free)",
+    keyType: "openRouterApiKey",
   },
   {
     id: "google/gemma-3n-2b",
     label: "Google: Gemma 3n 2B (free)",
+    keyType: "googleGeminiApiKey",
   },
   {
     id: "tencent/hunyuan-a13b-instruct",
     label: "Tencent: Hunyuan A13B Instruct (free)",
+    keyType: "openRouterApiKey",
   },
   {
     id: "tngtech/deepseek-r1t2-chimera",
     label: "TNG: DeepSeek R1T2 Chimera (free)",
+    keyType: "openRouterApiKey",
   },
   {
     id: "mistralai/mistral-small-3.2-24b",
     label: "Mistral: Mistral Small 3.2 24B (free)",
+    keyType: "openRouterApiKey",
   },
   {
     id: "moonshotai/kimi-dev-72b",
     label: "MoonshotAI: Kimi Dev 72B (free)",
+    keyType: "openRouterApiKey",
+  },
+  {
+    id: "openai/gpt-4",
+    label: "OpenAI: GPT-4",
+    keyType: "openAiApiKey",
+  },
+  {
+    id: "openai/gpt-3.5-turbo",
+    label: "OpenAI: GPT-3.5 Turbo",
+    keyType: "openAiApiKey",
+  },
+  {
+    id: "anthropic/claude-v1",
+    label: "Anthropic: Claude v1",
+    keyType: "anthropicApiKey",
   },
 ];
 
@@ -75,9 +100,31 @@ export function Sidebar() {
 
   const toggleMobile = () => setMobileOpen(!mobileOpen);
 
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    session.setModel(e.target.value);
-  };
+  // Find the selected model info
+  const selectedModelInfo = FREE_MODELS.find((m) => m.id === session.model);
+
+  // Determine active API key label based on keyType
+  const activeKeyType = selectedModelInfo?.keyType;
+  let activeApiKeyLabel = "No API key selected";
+
+  if (activeKeyType) {
+    switch (activeKeyType) {
+      case "openRouterApiKey":
+        activeApiKeyLabel = session.openRouterApiKey ? "OpenRouter API Key Active" : "OpenRouter API Key Not Set";
+        break;
+      case "openAiApiKey":
+        activeApiKeyLabel = session.openAiApiKey ? "OpenAI API Key Active" : "OpenAI API Key Not Set";
+        break;
+      case "googleGeminiApiKey":
+        activeApiKeyLabel = session.googleGeminiApiKey ? "Google Gemini API Key Active" : "Google Gemini API Key Not Set";
+        break;
+      case "anthropicApiKey":
+        activeApiKeyLabel = session.anthropicApiKey ? "Anthropic API Key Active" : "Anthropic API Key Not Set";
+        break;
+      default:
+        activeApiKeyLabel = "No API key selected";
+    }
+  }
 
   return (
     <>
@@ -94,7 +141,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-20 w-24 flex-col border-r bg-background/80 backdrop-blur-sm transition-transform sm:flex",
+          "fixed inset-y-0 left-0 z-20 w-28 flex-col border-r bg-background/80 backdrop-blur-sm transition-transform sm:flex",
           mobileOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
         )}
       >
@@ -106,7 +153,7 @@ export function Sidebar() {
             aria-label="Select AI model"
             className="w-full rounded-md border border-border bg-background p-1 text-sm text-foreground"
             value={session.model || FREE_MODELS[0].id}
-            onChange={handleModelChange}
+            onChange={(e) => session.setModel(e.target.value)}
           >
             {FREE_MODELS.map((m) => (
               <option key={m.id} value={m.id} title={m.label}>
@@ -114,6 +161,9 @@ export function Sidebar() {
               </option>
             ))}
           </select>
+          <p className="text-xs text-muted-foreground text-center mt-1 px-1">
+            {activeApiKeyLabel}
+          </p>
         </div>
 
         <nav className="flex flex-col items-center gap-4 px-3 py-6">
