@@ -19,6 +19,7 @@ export default function Dashboard() {
   const session = useSession();
   const [step, setStep] = useState<AppStep>(session.openRouterApiKey ? "research" : "apiKey");
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
+  const [hooksList, setHooksList] = useState<string[]>([]);
   const [selectedHook, setSelectedHook] = useState<string | null>(null);
   const [finalScript, setFinalScript] = useState<string | null>(null);
   const [captions, setCaptions] = useState<any>(null);
@@ -97,11 +98,10 @@ export default function Dashboard() {
 
   const handleBackToResearch = () => {
     setStep("research");
-    setSelectedIdea(null);
   };
   const handleBackToHooks = () => {
+    // Do NOT clear selectedHook or hooksList; we want to restore them.
     setStep("hooks");
-    setSelectedHook(null);
   };
   const handleBackToScript = () => {
     setStep("script");
@@ -135,10 +135,18 @@ export default function Dashboard() {
         );
       case "hooks":
         return selectedIdea && activeApiKey ? (
-          <HookStep idea={selectedIdea} apiKey={activeApiKey} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />
-        ) : (
-          <ResearchStep apiKey={activeApiKey} model={model} onNext={handleProceedToHooks} />
-        );
+          <HookStep
+            idea={selectedIdea}
+            apiKey={activeApiKey}
+            model={model}
+            onNext={handleProceedToScript}
+            onBack={handleBackToResearch}
+            initialHooks={hooksList}
+            selectedHook={selectedHook || ""}
+            setSelectedHook={(h) => setSelectedHook(h)}
+            onHooksGenerated={(list) => setHooksList(list)}
+          />
+        ) : null;
       case "script":
         return selectedIdea && selectedHook && activeApiKey ? (
           <ScriptStep

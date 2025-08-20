@@ -7,8 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Instagram, Linkedin, Youtube, RefreshCw, CheckCircle2 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
-import { useSession } from "@/context/session-context";
-import { createOrUpdateSession } from "@/lib/storage";
 import { saveHistoryEntry } from "@/lib/history";
 import { useRouter } from "next/navigation";
 
@@ -31,36 +29,8 @@ interface Captions {
 export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initialCaptions }: CaptionStepProps) {
   const [captions, setCaptions] = useState<Captions | null>(initialCaptions ?? null);
   const [loading, setLoading] = useState(false);
-  const session = useSession();
   const didInit = useRef(false);
   const router = useRouter();
-
-  const persistCaptions = async (caps: Captions) => {
-    await saveHistoryEntry({
-      type: "captions",
-      ideaTitle: idea.title,
-      ideaSnippet: idea.snippet,
-      source: idea.source,
-      url: idea.url,
-      hook,
-      scriptText: script,
-      captions: {
-        instagram: caps.instagram,
-        linkedin: caps.linkedin,
-        youtubeTitles: caps.youtubeTitles,
-      },
-    });
-
-    if (!session.sessionMeta) return;
-    try {
-      await createOrUpdateSession({
-        sessionId: session.sessionMeta.sessionId,
-        captions: caps,
-      });
-    } catch (err) {
-      console.error("Failed to save captions:", err);
-    }
-  };
 
   const saveProjectAndFinish = async () => {
     if (!captions) {
@@ -88,7 +58,7 @@ export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initial
   const generateCaptions = async () => {
     setLoading(true);
     setCaptions(null);
-    toast.info("Generating your social media captions...", { duration: 3000 });
+    toast.info("Generating your social media captions...", { duration: 2000 });
 
     try {
       const response = await fetch("/api/generate-captions", {
@@ -109,7 +79,6 @@ export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initial
         youtubeTitles: Array.isArray(data.youtubeTitles) ? data.youtubeTitles : [],
       };
       setCaptions(normalized);
-      await persistCaptions(normalized);
       toast.success("Your captions are ready!");
     } catch (error: any) {
       console.error(error);
@@ -122,9 +91,7 @@ export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initial
   useEffect(() => {
     if (didInit.current) return;
     didInit.current = true;
-    if (!initialCaptions) {
-      generateCaptions();
-    }
+    if (!initialCaptions) generateCaptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -143,12 +110,7 @@ export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initial
               <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Regenerate
             </Button>
-            <Button
-              size="sm"
-              className="gap-2"
-              disabled={!captions || !script}
-              onClick={saveProjectAndFinish}
-            >
+            <Button size="sm" className="gap-2" disabled={!captions || !script} onClick={saveProjectAndFinish}>
               <CheckCircle2 className="h-4 w-4" />
               Finish & Save to History
             </Button>
@@ -166,7 +128,9 @@ export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initial
               <>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Instagram className="h-5 w-5 text-pink-500" /> Instagram / Facebook</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <Instagram className="h-5 w-5 text-pink-500" /> Instagram / Facebook
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="whitespace-pre-wrap text-muted-foreground">{captions.instagram}</p>
@@ -177,7 +141,9 @@ export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initial
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Linkedin className="h-5 w-5 text-blue-500" /> LinkedIn</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <Linkedin className="h-5 w-5 text-blue-500" /> LinkedIn
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="whitespace-pre-wrap text-muted-foreground">{captions.linkedin}</p>
@@ -188,7 +154,9 @@ export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initial
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Youtube className="h-5 w-5 text-red-500" /> YouTube Titles</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <Youtube className="h-5 w-5 text-red-500" /> YouTube Titles
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2 list-disc list-inside text-muted-foreground">

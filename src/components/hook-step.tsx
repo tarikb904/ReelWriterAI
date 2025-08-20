@@ -7,8 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSession } from "@/context/session-context";
-import { getSession, saveSession, type StoredSession } from "@/lib/storage";
 
 interface ContentIdea {
   id: string;
@@ -24,18 +22,30 @@ interface HookStepProps {
   model: string;
   onNext: (hook: string) => void;
   onBack: () => void;
+  initialHooks?: string[];
+  selectedHook: string | null;
+  setSelectedHook: (hook: string) => void;
+  onHooksGenerated?: (hooks: string[]) => void;
 }
 
-export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps) {
-  const [hooks, setHooks] = useState<string[]>([]);
+export function HookStep({
+  idea,
+  apiKey,
+  model,
+  onNext,
+  onBack,
+  initialHooks = [],
+  selectedHook,
+  setSelectedHook,
+  onHooksGenerated,
+}: HookStepProps) {
+  const [hooks, setHooks] = useState<string[]>(initialHooks);
   const [loading, setLoading] = useState(false);
-  const [selectedHook, setSelectedHook] = useState<string | null>(null);
-  const session = useSession();
   const didInit = useRef(false);
 
   const generateHooks = async () => {
     setLoading(true);
-    setSelectedHook(null);
+    setSelectedHook("");
     setHooks([]);
     toast.info("Generating fresh hooks for you...", { duration: 2000 });
 
@@ -53,23 +63,8 @@ export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps)
 
       const data = await response.json();
       setHooks(data.hooks);
+      onHooksGenerated?.(data.hooks);
       toast.success("10 new hooks have been generated!");
-
-      if (session.sessionMeta) {
-        try {
-          const existing = await getSession(session.sessionMeta.sessionId);
-          const updated: StoredSession = {
-            sessionId: session.sessionMeta.sessionId,
-            createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
-            expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
-            ...(existing || {}),
-            hooks: data.hooks,
-          };
-          await saveSession(updated);
-        } catch (err) {
-          console.error("Failed to save hooks to session:", err);
-        }
-      }
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "An error occurred while generating hooks.");
@@ -81,28 +76,20 @@ export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps)
   useEffect(() => {
     if (didInit.current) return;
     didInit.current = true;
-    if (hooks.length === 0) generateHooks();
+    // Only auto-generate if there are no hooks already (e.g., first time)
+    if (!initialHooks || initialHooks.length === 0) {
+      generateHooks();
+    } else {
+      setHooks(initialHooks);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleNextClick = async () => {
-    if (!selectedHook) return;
-    if (session.sessionMeta) {
-      try {
-        const existing = await getSession(session.sessionMeta.sessionId);
-        const updated: StoredSession = {
-          sessionId: session.sessionMeta.sessionId,
-          createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
-          expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
-          ...(existing || {}),
-          selectedHook,
-        };
-        await saveSession(updated);
-      } catch (err) {
-        console.error("Failed to save selected hook:", err);
-      }
+  const handleNextClick = () => {
+    if (!selectedHook) {
+      toast.error("Please select a hook.");
+      return;
     }
-
     onNext(selectedHook);
   };
 

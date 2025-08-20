@@ -7,9 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
-import { useSession } from "@/context/session-context";
-import { createOrUpdateSession } from "@/lib/storage";
-import { saveHistoryEntry } from "@/lib/history";
 
 interface ContentIdea {
   id: string;
@@ -44,61 +41,26 @@ function cleanScriptText(text: string): string {
   // Remove stage directions and on-screen notes
   t = t.replace(/^\s*(on[- ]screen\s*text|b[- ]?roll|music|sfx|cut\s*to|camera|lower third|graphic|overlay)\s*[:\-].*$/gim, "");
   // Remove bracketed or parenthetical directions inside lines
-  t = t.replace(/\((?:[^)]{0,120})\)/g, (m) => (m.length <= 6 ? m : "")); // keep tiny emotive parentheses like (ok) else drop
+  t = t.replace(/\((?:[^)]{0,120})\)/g, (m) => (m.length <= 6 ? m : ""));
   t = t.replace(/\[(?:[^\]]{0,120})\]/g, "");
 
-  // Remove leftover double spaces and excessive punctuation spacing
+  // Remove leftover double spaces and normalize newlines
   t = t.replace(/[ \t]{2,}/g, " ");
-
-  // Normalize newlines: remove empty lines that are just artifacts
-  const lines = t.split("\n")
-    .map(l => l.replace(/\s+/g, " ").trim())
-    .filter(l => l.length > 0);
-
-  // Return as teleprompter-friendly: one sentence per line if possible
+  const lines = t.split("\n").map(l => l.replace(/\s+/g, " ").trim()).filter(Boolean);
   const joined = lines.join(" ");
-  const sentences = joined
-    .split(/(?<=[.!?])\s+/)
-    .map(s => s.trim())
-    .filter(Boolean);
-
+  const sentences = joined.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
   return sentences.join("\n").trim();
 }
 
 export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack, initialScript }: ScriptStepProps) {
   const [script, setScript] = useState(initialScript || "");
   const [loading, setLoading] = useState(false);
-  const session = useSession();
   const didInit = useRef(false);
-
-  const persistScript = async (text: string) => {
-    await saveHistoryEntry({
-      type: "script",
-      ideaTitle: idea.title,
-      ideaSnippet: idea.snippet,
-      source: idea.source,
-      url: idea.url,
-      hook,
-      scriptText: text,
-    });
-
-    if (!session.sessionMeta) return;
-    try {
-      await createOrUpdateSession({
-        sessionId: session.sessionMeta.sessionId,
-        idea,
-        selectedHook: hook,
-        script: { text, edited: true, lastEdited: Date.now() },
-      });
-    } catch (err) {
-      console.error("Failed to save script to session:", err);
-    }
-  };
 
   const generateScript = async () => {
     setLoading(true);
     setScript("");
-    toast.info("Writing your video script now...", { duration: 3000 });
+    toast.info("Writing your video script now...", { duration: 2000 });
 
     try {
       const response = await fetch("/api/generate-script", {
@@ -115,7 +77,6 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack, initialS
       const data = await response.json();
       const cleaned = cleanScriptText(data.script);
       setScript(cleaned);
-      await persistScript(cleaned);
       toast.success("Your script is ready!");
     } catch (error: any) {
       console.error(error);
@@ -154,7 +115,6 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack, initialS
           <Textarea
             value={script}
             onChange={(e) => setScript(e.target.value)}
-            onBlur={() => persistScript(script)}
             className="w-full h-[70vh] text-base"
             placeholder="Your generated script will appear here..."
           />
@@ -173,7 +133,7 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack, initialS
               <h3 className="font-semibold text-md mb-1">Selected Hook:</h3>
               <p className="text-sm text-muted-foreground">{hook}</p>
             </div>
-            <Button size="lg" className="w-full" disabled={!script} onClick={() => { persistScript(script); handleNextClick(); }}>
+            <Button size="lg" className="w-full" disabled={!script} onClick={handleNextClick}>
               Step 4: Generate Captions
             </Button>
             <Button size="lg" variant="outline" className="w-full" onClick={onBack}>
