@@ -9,6 +9,9 @@ import { ScriptStep } from "./script-step";
 import { CaptionStep } from "./caption-step";
 import { Toaster } from "@/components/ui/sonner";
 import { useSession } from "@/context/session-context";
+import HeaderBanner from "./header-banner";
+import ThemeToggle from "./theme-toggle";
+import { Sparkles } from "lucide-react";
 
 type AppStep = "apiKey" | "research" | "hooks" | "script" | "captions";
 
@@ -21,7 +24,6 @@ export default function Dashboard() {
   const [captions, setCaptions] = useState<any>(null);
   const [model, setModel] = useState(session.model || "mistralai/mistral-7b-instruct:free");
 
-  // Determine the active API key based on model prefix
   const getActiveApiKey = () => {
     if (model.startsWith("openai/")) return session.openAiApiKey ?? "";
     if (model.startsWith("google/gemini")) return session.googleGeminiApiKey ?? "";
@@ -38,51 +40,24 @@ export default function Dashboard() {
         const openSession = JSON.parse(openSessionRaw);
         sessionStorage.removeItem("reelwriter-open-session");
 
-        if (openSession.openRouterApiKey) {
-          session.setOpenRouterApiKey(openSession.openRouterApiKey);
-        }
-        if (openSession.openAiApiKey) {
-          session.setOpenAiApiKey(openSession.openAiApiKey);
-        }
-        if (openSession.googleGeminiApiKey) {
-          session.setGoogleGeminiApiKey(openSession.googleGeminiApiKey);
-        }
-        if (openSession.anthropicApiKey) {
-          session.setAnthropicApiKey(openSession.anthropicApiKey);
-        }
+        if (openSession.openRouterApiKey) session.setOpenRouterApiKey(openSession.openRouterApiKey);
+        if (openSession.openAiApiKey) session.setOpenAiApiKey(openSession.openAiApiKey);
+        if (openSession.googleGeminiApiKey) session.setGoogleGeminiApiKey(openSession.googleGeminiApiKey);
+        if (openSession.anthropicApiKey) session.setAnthropicApiKey(openSession.anthropicApiKey);
         if (openSession.model) {
           setModel(openSession.model);
           session.setModel(openSession.model);
         }
-        if (openSession.idea) {
-          setSelectedIdea(openSession.idea);
-        }
-        if (openSession.selectedHook) {
-          setSelectedHook(openSession.selectedHook);
-        }
-        if (openSession.script?.text) {
-          setFinalScript(openSession.script.text);
-        }
-        if (openSession.captions) {
-          setCaptions(openSession.captions);
-        }
+        if (openSession.idea) setSelectedIdea(openSession.idea);
+        if (openSession.selectedHook) setSelectedHook(openSession.selectedHook);
+        if (openSession.script?.text) setFinalScript(openSession.script.text);
+        if (openSession.captions) setCaptions(openSession.captions);
 
-        if (openSession.captions) {
-          setStep("captions");
-        } else if (openSession.script?.text) {
-          setStep("script");
-        } else if (openSession.selectedHook) {
-          setStep("hooks");
-        } else if (
-          openSession.openRouterApiKey ||
-          openSession.openAiApiKey ||
-          openSession.googleGeminiApiKey ||
-          openSession.anthropicApiKey
-        ) {
-          setStep("research");
-        } else {
-          setStep("apiKey");
-        }
+        if (openSession.captions) setStep("captions");
+        else if (openSession.script?.text) setStep("script");
+        else if (openSession.selectedHook) setStep("hooks");
+        else if (openSession.openRouterApiKey || openSession.openAiApiKey || openSession.googleGeminiApiKey || openSession.anthropicApiKey) setStep("research");
+        else setStep("apiKey");
       } catch (err) {
         console.error("Failed to parse opened session:", err);
       }
@@ -96,8 +71,7 @@ export default function Dashboard() {
       googleGeminiApiKey: string | null;
       anthropicApiKey: string | null;
     },
-    selectedModel: string,
-    activeKeyType: string
+    selectedModel: string
   ) => {
     session.setOpenRouterApiKey(keys.openRouterApiKey);
     session.setOpenAiApiKey(keys.openAiApiKey);
@@ -112,12 +86,10 @@ export default function Dashboard() {
     setSelectedIdea(idea);
     setStep("hooks");
   };
-
   const handleProceedToScript = (hook: string) => {
     setSelectedHook(hook);
     setStep("script");
   };
-
   const handleProceedToCaptions = (script: string) => {
     setFinalScript(script);
     setStep("captions");
@@ -130,20 +102,33 @@ export default function Dashboard() {
     session.setGoogleGeminiApiKey(null);
     session.setAnthropicApiKey(null);
   };
-
   const handleBackToResearch = () => {
     setStep("research");
     setSelectedIdea(null);
   };
-
   const handleBackToHooks = () => {
     setStep("hooks");
     setSelectedHook(null);
   };
-
   const handleBackToScript = () => {
     setStep("script");
     setFinalScript(null);
+  };
+
+  const titles: Record<AppStep, string> = {
+    apiKey: "Enter API Keys",
+    research: "Step 1: Research Viral Ideas",
+    hooks: "Step 2: Generate Hooks",
+    script: "Step 3: Write Script",
+    captions: "Step 4: Captions & Titles",
+  };
+
+  const subtitles: Record<AppStep, string> = {
+    apiKey: "Connect a model to begin",
+    research: "Curate what’s trending and relevant",
+    hooks: "Pick a winning opener",
+    script: "Craft a compelling, high-retention script",
+    captions: "Publish-ready, platform-optimized output",
   };
 
   function renderStep() {
@@ -151,42 +136,29 @@ export default function Dashboard() {
       case "apiKey":
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
       case "research":
-        if (activeApiKey) {
-          return <ResearchStep apiKey={activeApiKey} model={model} onNext={handleProceedToHooks} />;
-        }
-        return <ApiKeyStep onValidated={handleApiKeyValidated} />;
+        return activeApiKey ? (
+          <ResearchStep apiKey={activeApiKey} model={model} onNext={handleProceedToHooks} />
+        ) : (
+          <ApiKeyStep onValidated={handleApiKeyValidated} />
+        );
       case "hooks":
-        if (selectedIdea && activeApiKey) {
-          return (
-            <HookStep
-              idea={selectedIdea}
-              apiKey={activeApiKey}
-              model={model}
-              onNext={handleProceedToScript}
-              onBack={handleBackToResearch}
-            />
-          );
-        }
-        return <ResearchStep apiKey={activeApiKey} model={model} onNext={handleProceedToHooks} />;
+        return selectedIdea && activeApiKey ? (
+          <HookStep idea={selectedIdea} apiKey={activeApiKey} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />
+        ) : (
+          <ResearchStep apiKey={activeApiKey} model={model} onNext={handleProceedToHooks} />
+        );
       case "script":
-        if (selectedIdea && selectedHook && activeApiKey) {
-          return (
-            <ScriptStep
-              idea={selectedIdea}
-              hook={selectedHook}
-              apiKey={activeApiKey}
-              model={model}
-              onNext={handleProceedToCaptions}
-              onBack={handleBackToHooks}
-            />
-          );
-        }
-        return <HookStep idea={selectedIdea!} apiKey={activeApiKey} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />;
+        return selectedIdea && selectedHook && activeApiKey ? (
+          <ScriptStep idea={selectedIdea} hook={selectedHook} apiKey={activeApiKey} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />
+        ) : (
+          <HookStep idea={selectedIdea!} apiKey={activeApiKey} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />
+        );
       case "captions":
-        if (finalScript && activeApiKey) {
-          return <CaptionStep script={finalScript} apiKey={activeApiKey} model={model} onBack={handleBackToScript} />;
-        }
-        return <ScriptStep idea={selectedIdea!} hook={selectedHook!} apiKey={activeApiKey} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />;
+        return finalScript && activeApiKey ? (
+          <CaptionStep script={finalScript} apiKey={activeApiKey} model={model} onBack={handleBackToScript} />
+        ) : (
+          <ScriptStep idea={selectedIdea!} hook={selectedHook!} apiKey={activeApiKey} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />
+        );
       default:
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
     }
@@ -195,12 +167,13 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Sidebar />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:p-8 md:pl-28">
-        <div className="flex items-center ml-1">
-          <h1 className="text-3xl font-semibold">
-            {step === "apiKey" ? "Enter API Keys" : `Step ${["apiKey", "research", "hooks", "script", "captions"].indexOf(step)}: ${step.charAt(0).toUpperCase() + step.slice(1)}`}
-          </h1>
-        </div>
+      <main className="flex flex-1 flex-col gap-4 p-4 sm:ml-28 md:gap-8 md:p-8">
+        <HeaderBanner
+          title={titles[step]}
+          subtitle={subtitles[step]}
+          icon={<Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />}
+          right={<ThemeToggle />}
+        />
         {renderStep()}
       </main>
       <Toaster />

@@ -1,29 +1,24 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { listSessions, deleteSession, purgeExpiredSessions, saveSession, type StoredSession } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, ExternalLink, RefreshCw } from "lucide-react";
+import { Trash2, ExternalLink, RefreshCw, FileText, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { deleteHistoryEntry, listHistoryEntries, purgeOldEntries, type HistoryEntry } from "@/lib/history";
 
 export default function HistoryList() {
-  const [sessions, setSessions] = useState<StoredSession[]>([]);
+  const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const router = useRouter();
 
-  // Load all saved sessions from local storage, filter last 7 days
   const load = async () => {
     setLoading(true);
     try {
-      const items = await listSessions();
-      const now = Date.now();
-      const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-      // Filter sessions created within last 7 days
-      const recentSessions = items.filter(s => s.createdAt && s.createdAt >= sevenDaysAgo);
-      setSessions(recentSessions);
+      const items = await listHistoryEntries();
+      setEntries(items);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load history.");
@@ -37,67 +32,72 @@ export default function HistoryList() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this session? This action cannot be undone.")) return;
-    await deleteSession(id);
-    toast.success("Session deleted");
+    if (!confirm("Delete this item? This action cannot be undone.")) return;
+    await deleteHistoryEntry(id);
+    toast.success("Deleted");
     load();
   };
 
-  const handlePurgeExpired = async () => {
+  const handlePurge = async () => {
     setLoading(true);
     try {
-      const removed = await purgeExpiredSessions();
-      toast.success(`Purged ${removed} expired session(s).`);
+      const removed = await purgeOldEntries(7);
+      toast.success(`Purged ${removed} old item(s).`);
       await load();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to purge expired sessions.");
+      toast.error("Failed to purge.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpen = async (s: StoredSession) => {
-    try {
-      sessionStorage.setItem("reelwriter-open-session", JSON.stringify(s));
-      toast.success("Opening session...");
-      router.push("/");
-    } catch (err) {
-      console.error("Failed to open session:", err);
-      toast.error("Failed to open session.");
-    }
+  const handleOpen = async (e: HistoryEntry) => {
+    // Prepare a minimal payload for the dashboard opener
+    const payload = {
+      idea: e.ideaTitle ? { title: e.ideaTitle, snippet: e.ideaSnippet, url: e.url, source: e.source } : undefined,
+      selectedHook: e.hook,
+      script: e.scriptText ? { text: e.scriptText } : undefined,
+      captions: e.captions,
+      createdAt: e.createdAt,
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    };
+    sessionStorage.setItem("reelwriter-open-session", JSON.stringify(payload));
+    toast.success("Opening...");
+    router.push("/");
   };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return sessions;
-    return sessions.filter((s) => {
-      if (s.idea?.title && s.idea.title.toLowerCase().includes(q)) return true;
-      if (s.script?.text && s.script.text.toLowerCase().includes(q)) return true;
-      if (s.selectedHook && String(s.selectedHook).toLowerCase().includes(q)) return true;
-      if (s.captions?.instagram && s.captions.instagram.toLowerCase().includes(q)) return true;
-      if (s.captions?.linkedin && s.captions.linkedin.toLowerCase().includes(q)) return true;
-      if (s.captions?.youtubeTitles && s.captions.youtubeTitles.some(title => title.toLowerCase().includes(q))) return true;
+    if (!q) return entries;
+    return entries.filter((e) => {
+      if (e.ideaTitle && e.ideaTitle.toLowerCase().includes(q)) return true;
+      if (e.ideaSnippet && e.ideaSnippet.toLowerCase().includes(q)) return true;
+      if (e.hook && e.hook.toLowerCase().includes(q)) return true;
+      if (e.scriptText && e.scriptText.toLowerCase().includes(q)) return true;
+      if (e.captions?.instagram && e.captions.instagram.toLowerCase().includes(q)) return true;
+      if (e.captions?.linkedin && e.captions.linkedin.toLowerCase().includes(q)) return true;
+      if (e.captions?.youtubeTitles && e.captions.youtubeTitles.some(t => t.toLowerCase().includes(q))) return true;
       return false;
     });
-  }, [sessions, query]);
+  }, [entries, query]);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold">History (Last 7 Days)</h2>
         <div className="flex items-center gap-2">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter by title, script, hook, or captions..."
+            placeholder="Search title, script, hook, or captions..."
             className="rounded-md border px-3 py-2 text-sm bg-background"
           />
           <Button variant="outline" onClick={load} disabled={loading}>
             <RefreshCw className="mr-2 h-4 w-4" /> Refresh
           </Button>
-          <Button variant="destructive" onClick={handlePurgeExpired} disabled={loading}>
-            Purge Expired
+          <Button variant="destructive" onClick={handlePurge} disabled={loading}>
+            Purge 7d+
           </Button>
         </div>
       </div>
@@ -107,70 +107,61 @@ export default function HistoryList() {
       ) : filtered.length === 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>No sessions found</CardTitle>
+            <CardTitle>No items yet</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              No saved scripts or captions found for the last 7 days. Generate content to see it here.
+              Generate scripts and captions to see them here.
             </p>
           </CardContent>
         </Card>
       ) : (
-        filtered.map((s) => (
-          <Card key={s.sessionId}>
+        filtered.map((e) => (
+          <Card key={e.id} className="overflow-hidden">
             <CardHeader className="flex items-center justify-between gap-2">
-              <div>
-                <CardTitle>{s.idea?.title || s.sessionId}</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Created {new Date(s.createdAt).toLocaleString()} — Expires {new Date(s.expiresAt).toLocaleString()}
-                </p>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+                  {e.type === "script" ? <FileText className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />}
+                  {e.type === "script" ? "Script" : "Captions"}
+                </span>
+                <CardTitle className="text-base">
+                  {e.ideaTitle || (e.type === "captions" ? "Captions" : "Script")}
+                </CardTitle>
               </div>
               <div className="flex items-center gap-2">
-                <a
-                  href={s.idea?.url || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm"
-                  onClick={(e) => {
-                    if (!s.idea?.url) e.preventDefault();
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-                <Button variant="ghost" onClick={() => {
-                  const payload = JSON.stringify(s, null, 2);
-                  navigator.clipboard.writeText(payload);
-                  toast.success("Session JSON copied to clipboard (use import later).");
-                }}>
-                  Export
-                </Button>
-                <Button variant="outline" onClick={() => handleOpen(s)}>
+                {e.url && (
+                  <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-sm">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                )}
+                <Button variant="outline" size="sm" onClick={() => handleOpen(e)}>
                   Open
                 </Button>
-                <Button variant="destructive" onClick={() => handleDelete(s.sessionId)}>
+                <Button variant="destructive" size="sm" onClick={() => handleDelete(e.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid gap-2">
-                {s.selectedHook && (
-                  <p>
-                    <strong>Hook:</strong> {s.selectedHook}
-                  </p>
+                {e.hook && (
+                  <p className="text-sm"><strong>Hook:</strong> {e.hook}</p>
                 )}
-                {s.script?.text && (
-                  <p className="line-clamp-3 text-sm text-muted-foreground whitespace-pre-wrap">{s.script.text}</p>
+                {e.scriptText && (
+                  <p className="line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">{e.scriptText}</p>
                 )}
-                {s.captions?.instagram && (
-                  <p className="text-xs text-muted-foreground">Instagram caption generated</p>
+                {e.captions?.instagram && (
+                  <p className="text-xs text-muted-foreground">Instagram/Facebook caption saved</p>
                 )}
-                {s.captions?.linkedin && (
-                  <p className="text-xs text-muted-foreground">LinkedIn caption generated</p>
+                {e.captions?.linkedin && (
+                  <p className="text-xs text-muted-foreground">LinkedIn caption saved</p>
                 )}
-                {s.captions?.youtubeTitles && s.captions.youtubeTitles.length > 0 && (
-                  <p className="text-xs text-muted-foreground">YouTube titles generated</p>
+                {e.captions?.youtubeTitles && e.captions.youtubeTitles.length > 0 && (
+                  <p className="text-xs text-muted-foreground">YouTube titles saved</p>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  {new Date(e.createdAt).toLocaleString()}
+                </p>
               </div>
             </CardContent>
           </Card>

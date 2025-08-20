@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Copy, Instagram, Linkedin, Youtube, RefreshCw } from "lucide-react";
+import { Instagram, Linkedin, Youtube, RefreshCw } from "lucide-react";
 import { Textarea } from "./ui/textarea";
 import { useSession } from "@/context/session-context";
-import { createOrUpdateSession, type StoredSession } from "@/lib/storage";
+import { createOrUpdateSession } from "@/lib/storage";
+import { saveHistoryEntry } from "@/lib/history";
 
 interface CaptionStepProps {
   script: string;
@@ -29,6 +30,18 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
   const session = useSession();
 
   const persistCaptions = async (caps: Captions) => {
+    // Save to standalone history
+    await saveHistoryEntry({
+      type: "captions",
+      scriptText: script,
+      captions: {
+        instagram: caps.instagram,
+        linkedin: caps.linkedin,
+        youtubeTitles: caps.youtubeTitles,
+      },
+    });
+
+    // Legacy session persistence (best-effort)
     if (!session.sessionMeta) return;
     try {
       await createOrUpdateSession({
@@ -58,8 +71,13 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
       }
 
       const data = await response.json();
-      setCaptions(data);
-      await persistCaptions(data);
+      const normalized: Captions = {
+        instagram: data.instagram || "",
+        linkedin: data.linkedin || "",
+        youtubeTitles: Array.isArray(data.youtubeTitles) ? data.youtubeTitles : [],
+      };
+      setCaptions(normalized);
+      await persistCaptions(normalized);
       toast.success("Your captions are ready!");
     } catch (error: any) {
       console.error(error);

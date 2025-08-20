@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 import { useSession } from "@/context/session-context";
-import { createOrUpdateSession, type StoredSession } from "@/lib/storage";
+import { createOrUpdateSession } from "@/lib/storage";
+import { saveHistoryEntry } from "@/lib/history";
 
 interface ContentIdea {
   id: string;
@@ -44,6 +45,18 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
   const session = useSession();
 
   const persistScript = async (text: string) => {
+    // Save to standalone history (7-day retention handled by purge)
+    await saveHistoryEntry({
+      type: "script",
+      ideaTitle: idea.title,
+      ideaSnippet: idea.snippet,
+      source: idea.source,
+      url: idea.url,
+      hook,
+      scriptText: text,
+    });
+
+    // Keep legacy session persistence if available (non-blocking)
     if (!session.sessionMeta) return;
     try {
       await createOrUpdateSession({
@@ -53,7 +66,7 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
         script: { text, edited: true, lastEdited: Date.now() },
       });
     } catch (err) {
-      console.error("Failed to save script:", err);
+      console.error("Failed to save script to session:", err);
     }
   };
 

@@ -100,10 +100,7 @@ export function Sidebar() {
 
   const toggleMobile = () => setMobileOpen(!mobileOpen);
 
-  // Find the selected model info
   const selectedModelInfo = FREE_MODELS.find((m) => m.id === session.model);
-
-  // Determine active API key label based on keyType
   const activeKeyType = selectedModelInfo?.keyType;
   let activeApiKeyLabel = "No API key selected";
 
@@ -128,7 +125,6 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile toggle button */}
       <button
         aria-label={mobileOpen ? "Close menu" : "Open menu"}
         aria-pressed={mobileOpen}
@@ -138,7 +134,6 @@ export function Sidebar() {
         {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </button>
 
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-20 w-28 flex-col border-r bg-background/80 backdrop-blur-sm transition-transform sm:flex",
@@ -146,13 +141,13 @@ export function Sidebar() {
         )}
       >
         <div className="flex flex-col items-center gap-4 px-3 py-4 border-b border-border">
-          <div className="rounded-full p-2 logo-gradient shadow-md">
-            <Logo size={36} />
+          <div className="rounded-xl p-2 bg-white/70 shadow-sm dark:bg-white/10">
+            <Logo size={32} />
           </div>
           <select
             aria-label="Select AI model"
             className="w-full rounded-md border border-border bg-background p-1 text-sm text-foreground"
-            value={session.model || FREE_MODELS[0].id}
+            value={session.model}
             onChange={(e) => session.setModel(e.target.value)}
           >
             {FREE_MODELS.map((m) => (
