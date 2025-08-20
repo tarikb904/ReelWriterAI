@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +26,7 @@ interface ScriptStepProps {
   model: string;
   onNext: (script: string) => void;
   onBack: () => void;
+  initialScript?: string | null;
 }
 
 function cleanScriptText(text: string): string {
@@ -39,13 +40,13 @@ function cleanScriptText(text: string): string {
   return cleanedLines.join("\n").trim();
 }
 
-export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: ScriptStepProps) {
-  const [script, setScript] = useState("");
+export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack, initialScript }: ScriptStepProps) {
+  const [script, setScript] = useState(initialScript || "");
   const [loading, setLoading] = useState(false);
   const session = useSession();
+  const didInit = useRef(false);
 
   const persistScript = async (text: string) => {
-    // Save to standalone history (7-day retention handled by purge)
     await saveHistoryEntry({
       type: "script",
       ideaTitle: idea.title,
@@ -56,7 +57,6 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
       scriptText: text,
     });
 
-    // Keep legacy session persistence if available (non-blocking)
     if (!session.sessionMeta) return;
     try {
       await createOrUpdateSession({
@@ -100,15 +100,17 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
     }
   };
 
-  // Automatically generate script on component mount
-  useState(() => {
-    generateScript();
-  });
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+    if (!initialScript) {
+      generateScript();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNextClick = () => {
-    if (script) {
-      onNext(script);
-    }
+    if (script) onNext(script);
   };
 
   return (

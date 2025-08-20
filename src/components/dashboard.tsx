@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   const getActiveApiKey = () => {
     if (model.startsWith("openai/")) return session.openAiApiKey ?? "";
-    if (model.startsWith("google/gemini")) return session.googleGeminiApiKey ?? "";
+    if (model.startsWith("google/")) return session.googleGeminiApiKey ?? "";
     if (model.startsWith("anthropic/")) return session.anthropicApiKey ?? "";
     return session.openRouterApiKey ?? "";
   };
@@ -95,13 +95,6 @@ export default function Dashboard() {
     setStep("captions");
   };
 
-  const handleBackToApiKey = () => {
-    setStep("apiKey");
-    session.setOpenRouterApiKey(null);
-    session.setOpenAiApiKey(null);
-    session.setGoogleGeminiApiKey(null);
-    session.setAnthropicApiKey(null);
-  };
   const handleBackToResearch = () => {
     setStep("research");
     setSelectedIdea(null);
@@ -112,7 +105,7 @@ export default function Dashboard() {
   };
   const handleBackToScript = () => {
     setStep("script");
-    setFinalScript(null);
+    // keep finalScript so the editor is not emptied
   };
 
   const titles: Record<AppStep, string> = {
@@ -149,16 +142,26 @@ export default function Dashboard() {
         );
       case "script":
         return selectedIdea && selectedHook && activeApiKey ? (
-          <ScriptStep idea={selectedIdea} hook={selectedHook} apiKey={activeApiKey} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />
-        ) : (
-          <HookStep idea={selectedIdea!} apiKey={activeApiKey} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />
-        );
+          <ScriptStep
+            idea={selectedIdea}
+            hook={selectedHook}
+            apiKey={activeApiKey}
+            model={model}
+            initialScript={finalScript}
+            onNext={handleProceedToCaptions}
+            onBack={handleBackToHooks}
+          />
+        ) : null;
       case "captions":
         return finalScript && activeApiKey ? (
-          <CaptionStep script={finalScript} apiKey={activeApiKey} model={model} onBack={handleBackToScript} />
-        ) : (
-          <ScriptStep idea={selectedIdea!} hook={selectedHook!} apiKey={activeApiKey} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />
-        );
+          <CaptionStep
+            script={finalScript}
+            apiKey={activeApiKey}
+            model={model}
+            initialCaptions={captions}
+            onBack={handleBackToScript}
+          />
+        ) : null;
       default:
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
     }

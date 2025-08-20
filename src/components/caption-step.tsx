@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +16,7 @@ interface CaptionStepProps {
   apiKey: string;
   model: string;
   onBack: () => void;
+  initialCaptions?: Captions | null;
 }
 
 interface Captions {
@@ -24,13 +25,13 @@ interface Captions {
   youtubeTitles: string[];
 }
 
-export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps) {
-  const [captions, setCaptions] = useState<Captions | null>(null);
+export function CaptionStep({ script, apiKey, model, onBack, initialCaptions }: CaptionStepProps) {
+  const [captions, setCaptions] = useState<Captions | null>(initialCaptions ?? null);
   const [loading, setLoading] = useState(false);
   const session = useSession();
+  const didInit = useRef(false);
 
   const persistCaptions = async (caps: Captions) => {
-    // Save to standalone history
     await saveHistoryEntry({
       type: "captions",
       scriptText: script,
@@ -41,7 +42,6 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
       },
     });
 
-    // Legacy session persistence (best-effort)
     if (!session.sessionMeta) return;
     try {
       await createOrUpdateSession({
@@ -87,10 +87,14 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
     }
   };
 
-  // Automatically generate captions on component mount
-  useState(() => {
-    generateCaptions();
-  });
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+    if (!initialCaptions) {
+      generateCaptions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);

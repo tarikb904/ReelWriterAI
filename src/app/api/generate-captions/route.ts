@@ -82,24 +82,23 @@ Generate the captions and titles now.
     if (model.startsWith("openai/")) {
       const openAiModel = model.replace(/^openai\//, "");
       rawContent = await callOpenAIChatCompletion(apiKey, [{ role: "user", content: prompt }], openAiModel);
-    } else if (model.startsWith("google/gemini")) {
-      rawContent = await callGoogleGeminiChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+    } else if (model.startsWith("google/")) {
+      const gemModel = model.replace(/^google\//, "");
+      rawContent = await callGoogleGeminiChatCompletion(apiKey, [{ role: "user", content: prompt }], gemModel);
     } else if (model.startsWith("anthropic/")) {
-      rawContent = await callAnthropicClaudeChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+      const anthModel = model.replace(/^anthropic\//, "");
+      rawContent = await callAnthropicClaudeChatCompletion(apiKey, [{ role: "user", content: prompt }], anthModel);
     } else {
       rawContent = await callOpenRouterChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     }
 
-    // Parse and format output for better preview
     const parsed = parseCaptions(rawContent);
 
-    // Format Instagram caption for preview: replace newlines with <br> and preserve paragraphs
     const instagramPreview = parsed.instagram
-      .split(/\n{2,}/) // split by double newlines for paragraphs
+      .split(/\n{2,}/)
       .map(paragraph => paragraph.trim().replace(/\n/g, "<br />"))
       .join("<br /><br />");
 
-    // Format LinkedIn caption similarly
     const linkedinPreview = parsed.linkedin
       .split(/\n{2,}/)
       .map(paragraph => paragraph.trim().replace(/\n/g, "<br />"))
@@ -119,19 +118,13 @@ Generate the captions and titles now.
   }
 }
 
-/**
- * Optional helper to parse the raw content into structured JSON.
- * This is a simple heuristic and can be improved based on actual output format.
- */
 function parseCaptions(raw: string) {
-  // Attempt to split by the numbered sections 1️⃣, 2️⃣, 3️⃣
   const sections = raw.split(/1️⃣|2️⃣|3️⃣/).map(s => s.trim()).filter(Boolean);
 
   const instagramSection = sections[0]?.replace(/📲 Instagram \/ Facebook \/ Threads Caption/i, "").trim() || "";
   const linkedinSection = sections[1]?.replace(/💼 LinkedIn Caption/i, "").trim() || "";
   const youtubeSectionRaw = sections[2]?.replace(/📺 Give me 10 YouTube Titles/i, "").trim() || "";
 
-  // Extract YouTube titles as array by splitting lines and filtering empty lines
   const youtubeTitles = youtubeSectionRaw.split("\n").map(line => line.trim()).filter(line => line.length > 0);
 
   return {

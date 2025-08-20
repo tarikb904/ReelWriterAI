@@ -16,28 +16,25 @@ interface ApiKeyStepProps {
   }, model: string, activeKeyType: string) => void;
 }
 
-const MODELS_BY_KEY_TYPE: Record<string, { id: string; label: string }[]> = {
+type ModelItem = { id: string; label: string };
+
+const FALLBACKS: Record<string, ModelItem[]> = {
   openRouterApiKey: [
     { id: "openrouter/mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)" },
-    { id: "z-ai/glm-4.5-air", label: "Z.AI: GLM 4.5 Air (free)" },
-    { id: "qwen/qwen3-coder", label: "Qwen: Qwen3 Coder (free)" },
-    { id: "moonshotai/kimi-k2", label: "MoonshotAI: Kimi K2 (free)" },
-    { id: "cognitivecomputations/venice-uncensored", label: "Venice: Uncensored (free)" },
-    { id: "tencent/hunyuan-a13b-instruct", label: "Tencent: Hunyuan A13B Instruct (free)" },
-    { id: "tngtech/deepseek-r1t2-chimera", label: "TNG: DeepSeek R1T2 Chimera (free)" },
-    { id: "mistralai/mistral-small-3.2-24b", label: "Mistral: Mistral Small 3.2 24B (free)" },
-    { id: "moonshotai/kimi-dev-72b", label: "MoonshotAI: Kimi Dev 72B (free)" },
+    { id: "openrouter/z-ai/glm-4.5-air", label: "OpenRouter: GLM 4.5 Air (free)" },
   ],
   openAiApiKey: [
-    { id: "openai/gpt-4", label: "OpenAI: GPT-4" },
-    { id: "openai/gpt-3.5-turbo", label: "OpenAI: GPT-3.5 Turbo" },
-    { id: "openai/gpt-oss-20b", label: "OpenAI: gpt-oss-20b (free)" },
+    { id: "openai/gpt-4o", label: "OpenAI: gpt-4o" },
+    { id: "openai/gpt-4o-mini", label: "OpenAI: gpt-4o-mini" },
+    { id: "openai/gpt-3.5-turbo", label: "OpenAI: gpt-3.5-turbo" },
   ],
   googleGeminiApiKey: [
-    { id: "google/gemini-1", label: "Google: Gemini 1 (free)" },
+    { id: "google/gemini-1.5-pro", label: "Google: Gemini 1.5 Pro" },
+    { id: "google/gemini-1.5-flash", label: "Google: Gemini 1.5 Flash" },
   ],
   anthropicApiKey: [
-    { id: "anthropic/claude-v1", label: "Anthropic: Claude v1" },
+    { id: "anthropic/claude-3-sonnet", label: "Anthropic: Claude 3 Sonnet" },
+    { id: "anthropic/claude-3-haiku", label: "Anthropic: Claude 3 Haiku" },
   ],
 };
 
@@ -49,38 +46,73 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   const [googleGeminiApiKey, setGoogleGeminiApiKey] = useState(session.googleGeminiApiKey ?? "");
   const [anthropicApiKey, setAnthropicApiKey] = useState(session.anthropicApiKey ?? "");
 
-  // Determine initial active key type based on model prefix or default
   const initialKeyType = (() => {
     if (session.model?.startsWith("openai/")) return "openAiApiKey";
-    if (session.model?.startsWith("google/gemini")) return "googleGeminiApiKey";
+    if (session.model?.startsWith("google/")) return "googleGeminiApiKey";
     if (session.model?.startsWith("anthropic/")) return "anthropicApiKey";
     return "openRouterApiKey";
   })();
 
   const [activeKeyType, setActiveKeyType] = useState<string>(initialKeyType);
 
-  // Models available for the active key type
-  const [availableModels, setAvailableModels] = useState(MODELS_BY_KEY_TYPE[activeKeyType]);
+  const [availableModels, setAvailableModels] = useState<ModelItem[]>(FALLBACKS[activeKeyType]);
+  const [modelsLoading, setModelsLoading] = useState(false);
 
-  // Selected model
   const [model, setModel] = useState<string>(() => {
-    // If session model is in available models, use it; else first available
-    if (session.model && MODELS_BY_KEY_TYPE[activeKeyType].some(m => m.id === session.model)) {
-      return session.model;
-    }
-    return MODELS_BY_KEY_TYPE[activeKeyType][0].id;
+    const all = FALLBACKS[activeKeyType];
+    if (session.model && all.some((m) => m.id === session.model)) return session.model;
+    return all[0]?.id ?? "";
   });
 
-  const [validating, setValidating] = useState(false);
-  const [valid, setValid] = useState<boolean | null>(null);
-  const [message, setMessage] = useState<string>("");
+  const fetchModels = async (keyType: string) => {
+    const provider = keyType === "openAiApiKey"
+      ? "openai"
+      : keyType === "googleGeminiApiKey"
+        ? "google"
+        : keyType === "anthropicApiKey"
+          ? "anthropic"
+          : "openrouter";
 
-  // Update available models and selected model when activeKeyType changes
+    const key = keyType === "openAiApiKey"
+      ? openAiApiKey
+      : keyType === "googleGeminiApiKey"
+        ? googleGeminiApiKey
+        : keyType === "anthropicApiKey"
+          ? anthropicApiKey
+          : openRouterApiKey;
+
+    setModelsLoading(true);
+    try {
+      const res = await fetch("/api/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, apiKey: key || undefined }),
+      });
+      const data = await res.json();
+      const list: ModelItem[] = Array.isArray(data.models) ? data.models : [];
+      if (list.length) {
+        setAvailableModels(list);
+        // keep model if still in list, else use first
+        setModel((prev) => list.some((m) => m.id === prev) ? prev : list[0].id);
+      } else {
+        setAvailableModels(FALLBACKS[keyType] || []);
+        setModel((FALLBACKS[keyType] || [])[0]?.id ?? "");
+      }
+    } catch (e) {
+      setAvailableModels(FALLBACKS[keyType] || []);
+      setModel((FALLBACKS[keyType] || [])[0]?.id ?? "");
+    } finally {
+      setModelsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchModels(activeKeyType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeKeyType]);
+
   const onActiveKeyTypeChange = (keyType: string) => {
     setActiveKeyType(keyType);
-    const models = MODELS_BY_KEY_TYPE[keyType];
-    setAvailableModels(models);
-    setModel(models[0].id);
   };
 
   const validateKey = async () => {
@@ -100,52 +132,32 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
     }
 
     if (!keyToValidate) {
-      setValid(false);
-      setMessage("Please enter the API key for the selected model.");
-      toast.error("Please enter the API key for the selected model.");
+      toast.error("Please enter the API key for the selected model provider.");
       return;
     }
 
-    setValidating(true);
-    setValid(null);
-    setMessage("");
     try {
-      const res = await fetch("/api/validate-key", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: keyToValidate }),
-      });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        setValid(true);
-        setMessage("API key validated successfully!");
-        session.setOpenRouterApiKey(openRouterApiKey || null);
-        session.setOpenAiApiKey(openAiApiKey || null);
-        session.setGoogleGeminiApiKey(googleGeminiApiKey || null);
-        session.setAnthropicApiKey(anthropicApiKey || null);
-        session.setModel(model);
-        toast.success("API key validated!");
-        onValidated(
-          {
-            openRouterApiKey: openRouterApiKey || null,
-            openAiApiKey: openAiApiKey || null,
-            googleGeminiApiKey: googleGeminiApiKey || null,
-            anthropicApiKey: anthropicApiKey || null,
-          },
-          model,
-          activeKeyType
-        );
-      } else {
-        setValid(false);
-        setMessage(data.message || "Validation failed.");
-        toast.error("API key validation failed.");
-      }
-    } catch (err) {
-      setValid(false);
-      setMessage("Validation request failed.");
-      toast.error("API key validation request failed.");
-    } finally {
-      setValidating(false);
+      // Reuse /api/models as a light validation for fetchability
+      await fetchModels(activeKeyType);
+      // Persist to session context
+      session.setOpenRouterApiKey(openRouterApiKey || null);
+      session.setOpenAiApiKey(openAiApiKey || null);
+      session.setGoogleGeminiApiKey(googleGeminiApiKey || null);
+      session.setAnthropicApiKey(anthropicApiKey || null);
+      session.setModel(model);
+      toast.success("API key validated!");
+      onValidated(
+        {
+          openRouterApiKey: openRouterApiKey || null,
+          openAiApiKey: openAiApiKey || null,
+          googleGeminiApiKey: googleGeminiApiKey || null,
+          anthropicApiKey: anthropicApiKey || null,
+        },
+        model,
+        activeKeyType
+      );
+    } catch {
+      toast.error("Validation failed. Please check your API key.");
     }
   };
 
@@ -224,21 +236,16 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
               </option>
             ))}
           </select>
+          {modelsLoading && <p className="text-xs text-muted-foreground mt-1">Loading models…</p>}
         </div>
-
-        {message && (
-          <p className={`text-center ${valid ? "text-green-600" : "text-red-600"}`}>
-            {message}
-          </p>
-        )}
 
         <Button
           onClick={validateKey}
-          disabled={validating || isValidateDisabled()}
+          disabled={isValidateDisabled()}
           className="w-full"
           aria-label="Validate API keys and start research"
         >
-          {validating ? "Validating..." : "Validate & Start Research"}
+          Validate & Start Research
         </Button>
       </div>
     </div>

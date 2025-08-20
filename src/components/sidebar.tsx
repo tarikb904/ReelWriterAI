@@ -1,96 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState } from "react";
-import {
-  History,
-  Search,
-  Settings,
-  Menu,
-  X,
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import React, { useEffect, useMemo, useState } from "react";
+import { History, Search, Settings, Menu, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import Logo from "./logo";
 import { useSession } from "@/context/session-context";
 
+type ModelItem = { id: string; label: string };
+
 const navItems = [
   { href: "/", label: "Research", icon: Search },
   { href: "/history", label: "History", icon: History },
-];
-
-const FREE_MODELS = [
-  {
-    id: "openai/gpt-oss-20b",
-    label: "OpenAI: gpt-oss-20b (free)",
-    keyType: "openAiApiKey",
-  },
-  {
-    id: "z-ai/glm-4.5-air",
-    label: "Z.AI: GLM 4.5 Air (free)",
-    keyType: "openRouterApiKey",
-  },
-  {
-    id: "qwen/qwen3-coder",
-    label: "Qwen: Qwen3 Coder (free)",
-    keyType: "openRouterApiKey",
-  },
-  {
-    id: "moonshotai/kimi-k2",
-    label: "MoonshotAI: Kimi K2 (free)",
-    keyType: "openRouterApiKey",
-  },
-  {
-    id: "cognitivecomputations/venice-uncensored",
-    label: "Venice: Uncensored (free)",
-    keyType: "openRouterApiKey",
-  },
-  {
-    id: "google/gemma-3n-2b",
-    label: "Google: Gemma 3n 2B (free)",
-    keyType: "googleGeminiApiKey",
-  },
-  {
-    id: "tencent/hunyuan-a13b-instruct",
-    label: "Tencent: Hunyuan A13B Instruct (free)",
-    keyType: "openRouterApiKey",
-  },
-  {
-    id: "tngtech/deepseek-r1t2-chimera",
-    label: "TNG: DeepSeek R1T2 Chimera (free)",
-    keyType: "openRouterApiKey",
-  },
-  {
-    id: "mistralai/mistral-small-3.2-24b",
-    label: "Mistral: Mistral Small 3.2 24B (free)",
-    keyType: "openRouterApiKey",
-  },
-  {
-    id: "moonshotai/kimi-dev-72b",
-    label: "MoonshotAI: Kimi Dev 72B (free)",
-    keyType: "openRouterApiKey",
-  },
-  {
-    id: "openai/gpt-4",
-    label: "OpenAI: GPT-4",
-    keyType: "openAiApiKey",
-  },
-  {
-    id: "openai/gpt-3.5-turbo",
-    label: "OpenAI: GPT-3.5 Turbo",
-    keyType: "openAiApiKey",
-  },
-  {
-    id: "anthropic/claude-v1",
-    label: "Anthropic: Claude v1",
-    keyType: "anthropicApiKey",
-  },
 ];
 
 export function Sidebar() {
@@ -98,30 +21,67 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const session = useSession();
 
+  const [models, setModels] = useState<ModelItem[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+
   const toggleMobile = () => setMobileOpen(!mobileOpen);
 
-  const selectedModelInfo = FREE_MODELS.find((m) => m.id === session.model);
-  const activeKeyType = selectedModelInfo?.keyType;
-  let activeApiKeyLabel = "No API key selected";
+  const activeProvider = useMemo(() => {
+    if (session.model?.startsWith("openai/")) return "openai";
+    if (session.model?.startsWith("google/")) return "google";
+    if (session.model?.startsWith("anthropic/")) return "anthropic";
+    // default preference based on available keys
+    if (session.openRouterApiKey) return "openrouter";
+    if (session.openAiApiKey) return "openai";
+    if (session.googleGeminiApiKey) return "google";
+    if (session.anthropicApiKey) return "anthropic";
+    return "openrouter";
+  }, [session.model, session.openRouterApiKey, session.openAiApiKey, session.googleGeminiApiKey, session.anthropicApiKey]);
 
-  if (activeKeyType) {
-    switch (activeKeyType) {
-      case "openRouterApiKey":
-        activeApiKeyLabel = session.openRouterApiKey ? "OpenRouter API Key Active" : "OpenRouter API Key Not Set";
-        break;
-      case "openAiApiKey":
-        activeApiKeyLabel = session.openAiApiKey ? "OpenAI API Key Active" : "OpenAI API Key Not Set";
-        break;
-      case "googleGeminiApiKey":
-        activeApiKeyLabel = session.googleGeminiApiKey ? "Google Gemini API Key Active" : "Google Gemini API Key Not Set";
-        break;
-      case "anthropicApiKey":
-        activeApiKeyLabel = session.anthropicApiKey ? "Anthropic API Key Active" : "Anthropic API Key Not Set";
-        break;
-      default:
-        activeApiKeyLabel = "No API key selected";
+  const activeKey = useMemo(() => {
+    switch (activeProvider) {
+      case "openai": return session.openAiApiKey || "";
+      case "google": return session.googleGeminiApiKey || "";
+      case "anthropic": return session.anthropicApiKey || "";
+      default: return session.openRouterApiKey || "";
     }
-  }
+  }, [activeProvider, session]);
+
+  const activeApiKeyLabel = useMemo(() => {
+    switch (activeProvider) {
+      case "openai": return session.openAiApiKey ? "OpenAI API Key Active" : "OpenAI API Key Not Set";
+      case "google": return session.googleGeminiApiKey ? "Google Gemini API Key Active" : "Google Gemini API Key Not Set";
+      case "anthropic": return session.anthropicApiKey ? "Anthropic API Key Active" : "Anthropic API Key Not Set";
+      default: return session.openRouterApiKey ? "OpenRouter API Key Active" : "OpenRouter API Key Not Set";
+    }
+  }, [activeProvider, session]);
+
+  const loadModels = async () => {
+    setLoadingModels(true);
+    try {
+      const res = await fetch("/api/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: activeProvider, apiKey: activeKey || undefined }),
+      });
+      const data = await res.json();
+      const list: ModelItem[] = Array.isArray(data.models) ? data.models : [];
+      setModels(list);
+      if (list.length && !list.some((m) => m.id === session.model)) {
+        // Keep current selection if still valid; otherwise choose first
+        session.setModel(list[0].id);
+      }
+    } catch (e) {
+      // ignore; UI already shows label based on key
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
+  useEffect(() => {
+    loadModels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProvider, activeKey]);
 
   return (
     <>
@@ -150,11 +110,13 @@ export function Sidebar() {
             value={session.model}
             onChange={(e) => session.setModel(e.target.value)}
           >
-            {FREE_MODELS.map((m) => (
+            {models.length ? models.map((m) => (
               <option key={m.id} value={m.id} title={m.label}>
                 {m.label}
               </option>
-            ))}
+            )) : (
+              <option value={session.model || ""}>{loadingModels ? "Loading…" : (session.model || "Select a model in API setup")}</option>
+            )}
           </select>
           <p className="text-xs text-muted-foreground text-center mt-1 px-1">
             {activeApiKeyLabel}

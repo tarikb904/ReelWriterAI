@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +31,7 @@ export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps)
   const [loading, setLoading] = useState(false);
   const [selectedHook, setSelectedHook] = useState<string | null>(null);
   const session = useSession();
+  const didInit = useRef(false);
 
   const generateHooks = async () => {
     setLoading(true);
@@ -54,13 +55,11 @@ export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps)
       setHooks(data.hooks);
       toast.success("10 new hooks have been generated!");
 
-      // Persist hooks to active session if available
       if (session.sessionMeta) {
         try {
           const existing = await getSession(session.sessionMeta.sessionId);
           const updated: StoredSession = {
             sessionId: session.sessionMeta.sessionId,
-            // ensure required fields are present (use existing if present, otherwise use session meta)
             createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
             expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
             ...(existing || {}),
@@ -79,14 +78,15 @@ export function HookStep({ idea, apiKey, model, onNext, onBack }: HookStepProps)
     }
   };
 
-  // Automatically generate hooks on component mount
-  useState(() => {
-    generateHooks();
-  });
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+    if (hooks.length === 0) generateHooks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNextClick = async () => {
     if (!selectedHook) return;
-    // Persist selected hook
     if (session.sessionMeta) {
       try {
         const existing = await getSession(session.sessionMeta.sessionId);
