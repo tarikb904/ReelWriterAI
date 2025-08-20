@@ -13,15 +13,15 @@ interface ApiKeyStepProps {
     openAiApiKey: string | null;
     googleGeminiApiKey: string | null;
     anthropicApiKey: string | null;
-  }, model: string) => void;
+  }, model: string, activeKeyType: string) => void;
 }
 
 const FREE_MODELS = [
-  { id: "openrouter/mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)" },
-  { id: "openai/gpt-4", label: "OpenAI: GPT-4" },
-  { id: "openai/gpt-3.5-turbo", label: "OpenAI: GPT-3.5 Turbo" },
-  { id: "google/gemini-1", label: "Google: Gemini 1 (free)" },
-  { id: "anthropic/claude-v1", label: "Anthropic: Claude v1" },
+  { id: "openrouter/mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)", keyType: "openRouterApiKey" },
+  { id: "openai/gpt-4", label: "OpenAI: GPT-4", keyType: "openAiApiKey" },
+  { id: "openai/gpt-3.5-turbo", label: "OpenAI: GPT-3.5 Turbo", keyType: "openAiApiKey" },
+  { id: "google/gemini-1", label: "Google: Gemini 1 (free)", keyType: "googleGeminiApiKey" },
+  { id: "anthropic/claude-v1", label: "Anthropic: Claude v1", keyType: "anthropicApiKey" },
 ];
 
 export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
@@ -33,17 +33,35 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   const [anthropicApiKey, setAnthropicApiKey] = useState(session.anthropicApiKey ?? "");
   const [model, setModel] = useState(session.model ?? FREE_MODELS[0].id);
 
+  // Determine initial active key type based on model prefix
+  const initialKeyType = (() => {
+    if (model.startsWith("openai/")) return "openAiApiKey";
+    if (model.startsWith("google/gemini")) return "googleGeminiApiKey";
+    if (model.startsWith("anthropic/")) return "anthropicApiKey";
+    return "openRouterApiKey";
+  })();
+
+  const [activeKeyType, setActiveKeyType] = useState<string>(initialKeyType);
+
   const [validating, setValidating] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);
   const [message, setMessage] = useState<string>("");
 
   const validateKey = async () => {
-    // Determine which API key to validate based on selected model prefix
     let keyToValidate: string | null = null;
-    if (model.startsWith("openai/")) keyToValidate = openAiApiKey;
-    else if (model.startsWith("google/gemini")) keyToValidate = googleGeminiApiKey;
-    else if (model.startsWith("anthropic/")) keyToValidate = anthropicApiKey;
-    else keyToValidate = openRouterApiKey;
+    switch (activeKeyType) {
+      case "openAiApiKey":
+        keyToValidate = openAiApiKey;
+        break;
+      case "googleGeminiApiKey":
+        keyToValidate = googleGeminiApiKey;
+        break;
+      case "anthropicApiKey":
+        keyToValidate = anthropicApiKey;
+        break;
+      default:
+        keyToValidate = openRouterApiKey;
+    }
 
     if (!keyToValidate) {
       setValid(false);
@@ -78,7 +96,8 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
             googleGeminiApiKey: googleGeminiApiKey || null,
             anthropicApiKey: anthropicApiKey || null,
           },
-          model
+          model,
+          activeKeyType
         );
       } else {
         setValid(false);
@@ -96,57 +115,102 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-background">
-      <div className="max-w-md w-full glass-card elevated space-y-4">
+      <div className="max-w-md w-full glass-card elevated space-y-6">
         <h2 className="text-2xl font-semibold text-center">Enter Your API Keys</h2>
 
-        <div>
-          <Label htmlFor="openrouter-api-key">OpenRouter API Key</Label>
-          <Input
-            id="openrouter-api-key"
-            type="password"
-            placeholder="sk-or-..."
-            value={openRouterApiKey}
-            onChange={(e) => setOpenRouterApiKey(e.target.value)}
-            aria-label="OpenRouter API Key"
+        {/* OpenRouter API Key */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="radio"
+            id="key-openrouter"
+            name="active-api-key"
+            checked={activeKeyType === "openRouterApiKey"}
+            onChange={() => setActiveKeyType("openRouterApiKey")}
+            className="h-4 w-4"
           />
+          <div className="flex-1">
+            <Label htmlFor="openrouter-api-key">OpenRouter API Key</Label>
+            <Input
+              id="openrouter-api-key"
+              type="password"
+              placeholder="sk-or-..."
+              value={openRouterApiKey}
+              onChange={(e) => setOpenRouterApiKey(e.target.value)}
+              aria-label="OpenRouter API Key"
+            />
+          </div>
         </div>
 
-        <div>
-          <Label htmlFor="openai-api-key">OpenAI API Key</Label>
-          <Input
-            id="openai-api-key"
-            type="password"
-            placeholder="sk-..."
-            value={openAiApiKey}
-            onChange={(e) => setOpenAiApiKey(e.target.value)}
-            aria-label="OpenAI API Key"
+        {/* OpenAI API Key */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="radio"
+            id="key-openai"
+            name="active-api-key"
+            checked={activeKeyType === "openAiApiKey"}
+            onChange={() => setActiveKeyType("openAiApiKey")}
+            className="h-4 w-4"
           />
+          <div className="flex-1">
+            <Label htmlFor="openai-api-key">OpenAI API Key</Label>
+            <Input
+              id="openai-api-key"
+              type="password"
+              placeholder="sk-..."
+              value={openAiApiKey}
+              onChange={(e) => setOpenAiApiKey(e.target.value)}
+              aria-label="OpenAI API Key"
+            />
+          </div>
         </div>
 
-        <div>
-          <Label htmlFor="google-gemini-api-key">Google Gemini API Key</Label>
-          <Input
-            id="google-gemini-api-key"
-            type="password"
-            placeholder="Your Google Gemini API Key"
-            value={googleGeminiApiKey}
-            onChange={(e) => setGoogleGeminiApiKey(e.target.value)}
-            aria-label="Google Gemini API Key"
+        {/* Google Gemini API Key */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="radio"
+            id="key-gemini"
+            name="active-api-key"
+            checked={activeKeyType === "googleGeminiApiKey"}
+            onChange={() => setActiveKeyType("googleGeminiApiKey")}
+            className="h-4 w-4"
           />
+          <div className="flex-1">
+            <Label htmlFor="google-gemini-api-key">Google Gemini API Key</Label>
+            <Input
+              id="google-gemini-api-key"
+              type="password"
+              placeholder="Your Google Gemini API Key"
+              value={googleGeminiApiKey}
+              onChange={(e) => setGoogleGeminiApiKey(e.target.value)}
+              aria-label="Google Gemini API Key"
+            />
+          </div>
         </div>
 
-        <div>
-          <Label htmlFor="anthropic-api-key">Anthropic Claude API Key</Label>
-          <Input
-            id="anthropic-api-key"
-            type="password"
-            placeholder="Your Anthropic API Key"
-            value={anthropicApiKey}
-            onChange={(e) => setAnthropicApiKey(e.target.value)}
-            aria-label="Anthropic API Key"
+        {/* Anthropic API Key */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="radio"
+            id="key-anthropic"
+            name="active-api-key"
+            checked={activeKeyType === "anthropicApiKey"}
+            onChange={() => setActiveKeyType("anthropicApiKey")}
+            className="h-4 w-4"
           />
+          <div className="flex-1">
+            <Label htmlFor="anthropic-api-key">Anthropic Claude API Key</Label>
+            <Input
+              id="anthropic-api-key"
+              type="password"
+              placeholder="Your Anthropic API Key"
+              value={anthropicApiKey}
+              onChange={(e) => setAnthropicApiKey(e.target.value)}
+              aria-label="Anthropic API Key"
+            />
+          </div>
         </div>
 
+        {/* Model selector */}
         <div>
           <Label htmlFor="model-select">Select Model</Label>
           <select
