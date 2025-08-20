@@ -33,7 +33,6 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   const [anthropicApiKey, setAnthropicApiKey] = useState(session.anthropicApiKey ?? "");
   const [model, setModel] = useState(session.model ?? FREE_MODELS[0].id);
 
-  // Determine initial active key type based on model prefix
   const initialKeyType = (() => {
     if (model.startsWith("openai/")) return "openAiApiKey";
     if (model.startsWith("google/gemini")) return "googleGeminiApiKey";
@@ -42,10 +41,26 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   })();
 
   const [activeKeyType, setActiveKeyType] = useState<string>(initialKeyType);
-
   const [validating, setValidating] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);
   const [message, setMessage] = useState<string>("");
+
+  const clearKey = (keyType: string) => {
+    switch (keyType) {
+      case "openRouterApiKey":
+        setOpenRouterApiKey("");
+        break;
+      case "openAiApiKey":
+        setOpenAiApiKey("");
+        break;
+      case "googleGeminiApiKey":
+        setGoogleGeminiApiKey("");
+        break;
+      case "anthropicApiKey":
+        setAnthropicApiKey("");
+        break;
+    }
+  };
 
   const validateKey = async () => {
     let keyToValidate: string | null = null;
@@ -66,6 +81,7 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
     if (!keyToValidate) {
       setValid(false);
       setMessage("Please enter the API key for the selected model.");
+      toast.error("Please enter the API key for the selected model.");
       return;
     }
 
@@ -82,7 +98,6 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
       if (res.ok && data.ok) {
         setValid(true);
         setMessage("API key validated successfully!");
-        // Save keys to session context
         session.setOpenRouterApiKey(openRouterApiKey || null);
         session.setOpenAiApiKey(openAiApiKey || null);
         session.setGoogleGeminiApiKey(googleGeminiApiKey || null);
@@ -113,104 +128,67 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
     }
   };
 
+  const isValidateDisabled = () => {
+    switch (activeKeyType) {
+      case "openAiApiKey":
+        return !openAiApiKey.trim();
+      case "googleGeminiApiKey":
+        return !googleGeminiApiKey.trim();
+      case "anthropicApiKey":
+        return !anthropicApiKey.trim();
+      default:
+        return !openRouterApiKey.trim();
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-background">
       <div className="max-w-md w-full glass-card elevated space-y-6">
         <h2 className="text-2xl font-semibold text-center">Enter Your API Keys</h2>
 
-        {/* OpenRouter API Key */}
-        <div className="flex items-center space-x-2">
-          <input
-            type="radio"
-            id="key-openrouter"
-            name="active-api-key"
-            checked={activeKeyType === "openRouterApiKey"}
-            onChange={() => setActiveKeyType("openRouterApiKey")}
-            className="h-4 w-4"
-          />
-          <div className="flex-1">
-            <Label htmlFor="openrouter-api-key">OpenRouter API Key</Label>
-            <Input
-              id="openrouter-api-key"
-              type="password"
-              placeholder="sk-or-..."
-              value={openRouterApiKey}
-              onChange={(e) => setOpenRouterApiKey(e.target.value)}
-              aria-label="OpenRouter API Key"
+        {[
+          { label: "OpenRouter API Key", value: openRouterApiKey, setter: setOpenRouterApiKey, keyType: "openRouterApiKey", id: "openrouter-api-key", placeholder: "sk-or-..." },
+          { label: "OpenAI API Key", value: openAiApiKey, setter: setOpenAiApiKey, keyType: "openAiApiKey", id: "openai-api-key", placeholder: "sk-..." },
+          { label: "Google Gemini API Key", value: googleGeminiApiKey, setter: setGoogleGeminiApiKey, keyType: "googleGeminiApiKey", id: "google-gemini-api-key", placeholder: "Your Google Gemini API Key" },
+          { label: "Anthropic Claude API Key", value: anthropicApiKey, setter: setAnthropicApiKey, keyType: "anthropicApiKey", id: "anthropic-api-key", placeholder: "Your Anthropic API Key" },
+        ].map(({ label, value, setter, keyType, id, placeholder }) => (
+          <div key={keyType} className="flex items-center space-x-2">
+            <input
+              type="radio"
+              id={`key-${keyType}`}
+              name="active-api-key"
+              checked={activeKeyType === keyType}
+              onChange={() => setActiveKeyType(keyType)}
+              className="h-4 w-4"
+              aria-label={`Select ${label} as active API key`}
             />
+            <div className="flex-1">
+              <Label htmlFor={id}>{label}</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id={id}
+                  type="password"
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={(e) => setter(e.target.value)}
+                  aria-describedby={`${id}-help`}
+                />
+                {value && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={`Clear ${label}`}
+                    onClick={() => setter("")}
+                    className="h-8 w-8"
+                  >
+                    ×
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        ))}
 
-        {/* OpenAI API Key */}
-        <div className="flex items-center space-x-2">
-          <input
-            type="radio"
-            id="key-openai"
-            name="active-api-key"
-            checked={activeKeyType === "openAiApiKey"}
-            onChange={() => setActiveKeyType("openAiApiKey")}
-            className="h-4 w-4"
-          />
-          <div className="flex-1">
-            <Label htmlFor="openai-api-key">OpenAI API Key</Label>
-            <Input
-              id="openai-api-key"
-              type="password"
-              placeholder="sk-..."
-              value={openAiApiKey}
-              onChange={(e) => setOpenAiApiKey(e.target.value)}
-              aria-label="OpenAI API Key"
-            />
-          </div>
-        </div>
-
-        {/* Google Gemini API Key */}
-        <div className="flex items-center space-x-2">
-          <input
-            type="radio"
-            id="key-gemini"
-            name="active-api-key"
-            checked={activeKeyType === "googleGeminiApiKey"}
-            onChange={() => setActiveKeyType("googleGeminiApiKey")}
-            className="h-4 w-4"
-          />
-          <div className="flex-1">
-            <Label htmlFor="google-gemini-api-key">Google Gemini API Key</Label>
-            <Input
-              id="google-gemini-api-key"
-              type="password"
-              placeholder="Your Google Gemini API Key"
-              value={googleGeminiApiKey}
-              onChange={(e) => setGoogleGeminiApiKey(e.target.value)}
-              aria-label="Google Gemini API Key"
-            />
-          </div>
-        </div>
-
-        {/* Anthropic API Key */}
-        <div className="flex items-center space-x-2">
-          <input
-            type="radio"
-            id="key-anthropic"
-            name="active-api-key"
-            checked={activeKeyType === "anthropicApiKey"}
-            onChange={() => setActiveKeyType("anthropicApiKey")}
-            className="h-4 w-4"
-          />
-          <div className="flex-1">
-            <Label htmlFor="anthropic-api-key">Anthropic Claude API Key</Label>
-            <Input
-              id="anthropic-api-key"
-              type="password"
-              placeholder="Your Anthropic API Key"
-              value={anthropicApiKey}
-              onChange={(e) => setAnthropicApiKey(e.target.value)}
-              aria-label="Anthropic API Key"
-            />
-          </div>
-        </div>
-
-        {/* Model selector */}
         <div>
           <Label htmlFor="model-select">Select Model</Label>
           <select
@@ -236,7 +214,7 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
 
         <Button
           onClick={validateKey}
-          disabled={validating}
+          disabled={validating || isValidateDisabled()}
           className="w-full"
           aria-label="Validate API keys and start research"
         >
