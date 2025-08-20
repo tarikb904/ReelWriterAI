@@ -87,6 +87,14 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
         session.setAnthropicApiKey(anthropicApiKey || null);
         session.setModel(model);
         toast.success("API key validated!");
+        console.log("Calling onValidated with keys and model", {
+          openRouterApiKey,
+          openAiApiKey,
+          googleGeminiApiKey,
+          anthropicApiKey,
+          model,
+          activeKeyType,
+        });
         onValidated(
           {
             openRouterApiKey: openRouterApiKey || null,
@@ -111,23 +119,6 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
     }
   };
 
-  const clearKey = (keyType: string) => {
-    switch (keyType) {
-      case "openRouterApiKey":
-        setOpenRouterApiKey("");
-        break;
-      case "openAiApiKey":
-        setOpenAiApiKey("");
-        break;
-      case "googleGeminiApiKey":
-        setGoogleGeminiApiKey("");
-        break;
-      case "anthropicApiKey":
-        setAnthropicApiKey("");
-        break;
-    }
-  };
-
   const isValidateDisabled = () => {
     switch (activeKeyType) {
       case "openAiApiKey":
@@ -146,6 +137,7 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
       <div className="max-w-md w-full glass-card elevated space-y-6">
         <h2 className="text-2xl font-semibold text-center">Enter Your API Keys</h2>
 
+        {/* API key inputs with radio buttons */}
         {[
           { label: "OpenRouter API Key", value: openRouterApiKey, setter: setOpenRouterApiKey, keyType: "openRouterApiKey", id: "openrouter-api-key", placeholder: "sk-or-..." },
           { label: "OpenAI API Key", value: openAiApiKey, setter: setOpenAiApiKey, keyType: "openAiApiKey", id: "openai-api-key", placeholder: "sk-..." },
@@ -174,21 +166,21 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
                   aria-describedby={`${id}-help`}
                 />
                 {value && (
-                  <Button
-                    variant="outline"
-                    size="icon"
+                  <button
+                    type="button"
                     aria-label={`Clear ${label}`}
-                    onClick={() => clearKey(keyType)}
-                    className="h-8 w-8"
+                    onClick={() => setter("")}
+                    className="h-8 w-8 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
                   >
                     ×
-                  </Button>
+                  </button>
                 )}
               </div>
             </div>
           </div>
         ))}
 
+        {/* Model selector */}
         <div>
           <Label htmlFor="model-select">Select Model</Label>
           <select
