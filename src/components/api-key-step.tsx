@@ -111,15 +111,17 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
             placeholder="sk-or-..."
             value={apiKey}
             onChange={(e) => { setApiKey(e.target.value); setValid(null); setMessage(""); }}
+            aria-label="OpenRouter API Key"
           />
         </div>
         <div className="mb-4">
           <Label htmlFor="model-select">Select Model</Label>
           <select
             id="model-select"
-            className="w-full rounded-md border border-border bg-background p-2"
+            className="w-full rounded-md border border-border bg-background p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
             value={model}
             onChange={(e) => setModel(e.target.value)}
+            aria-label="Select AI model"
           >
             {FREE_MODELS.map((m) => (
               <option key={m.id} value={m.id} title={m.label}>
@@ -133,7 +135,12 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
             {message}
           </p>
         )}
-        <Button onClick={validateKey} disabled={validating} className="w-full">
+        <Button
+          onClick={validateKey}
+          disabled={validating}
+          className="w-full transition-colors hover:bg-primary/90 focus:ring-2 focus:ring-primary"
+          aria-label="Validate API key and start research"
+        >
           {validating ? "Validating..." : "Validate & Start Research"}
         </Button>
       </div>
