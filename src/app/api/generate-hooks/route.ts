@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import {
+  callOpenAIChatCompletion,
+  callGoogleGeminiChatCompletion,
+  callAnthropicClaudeChatCompletion,
+  callOpenRouterChatCompletion,
+} from "@/lib/apiClients";
 
 export async function POST(request: Request) {
   const { idea, apiKey, model } = await request.json();
@@ -31,32 +37,25 @@ Begin generating the hooks now:
 `;
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: "user", content: prompt }]
-      })
-    });
+    let generatedText = "";
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter API Error:", errorText);
-      return NextResponse.json({ error: `Failed to generate hooks. API returned: ${errorText}` }, { status: response.status });
+    if (model.startsWith("openai/")) {
+      generatedText = await callOpenAIChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+    } else if (model.startsWith("google/gemini")) {
+      generatedText = await callGoogleGeminiChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+    } else if (model.startsWith("anthropic/")) {
+      generatedText = await callAnthropicClaudeChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+    } else {
+      // Default to OpenRouter
+      generatedText = await callOpenRouterChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     }
 
-    const data = await response.json();
-    const generatedText = data.choices[0].message.content;
-    const hooks = generatedText.split('\n').filter((hook: string) => hook.trim() !== '');
+    const hooks = generatedText.split('\n').filter((hook) => hook.trim() !== '');
 
     return NextResponse.json({ hooks });
 
   } catch (error) {
-    console.error("Error calling OpenRouter API:", error);
+    console.error("Error generating hooks:", error);
     return NextResponse.json({ error: "An internal error occurred while generating hooks." }, { status: 500 });
   }
 }
