@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, ExternalLink, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSession } from "@/context/session-context";
 import { toast } from "sonner";
 
 export interface ContentIdea {
@@ -20,7 +19,7 @@ export interface ContentIdea {
 interface ResearchStepProps {
   apiKey: string;
   model: string;
-  onNext: (idea: ContentIdea, apiKey?: string, model?: string) => void;
+  onNext: (idea: ContentIdea) => void;
 }
 
 const STOPWORDS = new Set([
@@ -44,9 +43,25 @@ function extractTopics(ideas: ContentIdea[], topN = 8) {
 export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
   const [filterTopic, setFilterTopic] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState<string>(`
+  const [customIdea, setCustomIdea] = useState<string>("");
+  const [improving, setImproving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchIdeas = async () => {
+    setLoading(true);
+    setError(null);
+    setIdeas([]);
+    setSelectedIdeaId(null);
+    setFilterTopic(null);
+    setCustomIdea("");
+    try {
+      const res = await fetch("/api/ai-research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `
 You are an expert content researcher specializing in the "Make Money Online" and "Business Operations" niches. Your task is to generate a list of 20 viral content ideas that are currently trending or highly engaging.
 
 Each idea should include:
@@ -58,23 +73,10 @@ Each idea should include:
 Format the output as a JSON array of objects with keys: id, title, snippet, source, url.
 
 Begin generating the ideas now.
-`);
-  const [improving, setImproving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Radio selection: either topic word or "custom"
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  // Custom idea text
-  const [customIdea, setCustomIdea] = useState<string>("");
-
-  const fetchIdeas = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/ai-research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, apiKey, model }),
+          `,
+          apiKey,
+          model,
+        }),
       });
       if (!res.ok) {
         const errData = await res.json();
@@ -84,35 +86,11 @@ Begin generating the ideas now.
         const data = await res.json();
         setIdeas(data);
       }
-    } catch (err) {
+    } catch {
       setError("Could not fetch viral content. Please try again later.");
       setIdeas([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const improvePrompt = async () => {
-    setImproving(true);
-    try {
-      const res = await fetch("/api/improve-prompt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, apiKey, model }),
-      });
-      if (!res.ok) {
-        toast.error("Failed to improve prompt");
-      } else {
-        const data = await res.json();
-        if (data.improvedPrompt) {
-          setPrompt(data.improvedPrompt);
-          toast.success("Prompt improved!");
-        }
-      }
-    } catch {
-      toast.error("Failed to improve prompt");
-    } finally {
-      setImproving(false);
     }
   };
 
@@ -139,6 +117,7 @@ You are an expert content strategist. Improve the following viral content idea t
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0 && data[0].title) {
           setCustomIdea(data[0].title);
+          setSelectedIdeaId("custom");
           toast.success("Idea improved!");
         } else {
           toast.error("Could not parse improved idea");
@@ -151,17 +130,19 @@ You are an expert content strategist. Improve the following viral content idea t
     }
   };
 
-  const topics = useMemo(() => extractTopics(ideas), [ideas]);
-
+  // Filter ideas by selected topic word
   const filteredIdeas = useMemo(() => {
     if (!filterTopic) return ideas;
     const t = filterTopic.toLowerCase();
     return ideas.filter((i) => (i.title + " " + i.snippet).toLowerCase().includes(t));
   }, [ideas, filterTopic]);
 
+  // Extract top topics from ideas for filtering
+  const topics = useMemo(() => extractTopics(ideas), [ideas]);
+
   const handleGenerateHook = () => {
     let ideaToUse: ContentIdea | null = null;
-    if (selectedTopic === "custom") {
+    if (selectedIdeaId === "custom") {
       if (!customIdea.trim()) {
         toast.error("Please enter your custom idea.");
         return;
@@ -173,12 +154,11 @@ You are an expert content strategist. Improve the following viral content idea t
         source: "Custom Idea",
         url: "",
       };
-    } else if (selectedTopic) {
-      // Find first idea matching the selected topic word
-      ideaToUse = ideas.find(i => (i.title + " " + i.snippet).toLowerCase().includes(selectedTopic.toLowerCase())) || null;
+    } else if (selectedIdeaId) {
+      ideaToUse = ideas.find((i) => i.id === selectedIdeaId) || null;
     }
     if (!ideaToUse) {
-      toast.error("Please select a topic or enter a custom idea.");
+      toast.error("Please select a content idea or enter a custom idea.");
       return;
     }
     onNext(ideaToUse);
@@ -188,135 +168,162 @@ You are an expert content strategist. Improve the following viral content idea t
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="flex-1 flex flex-col">
         <div className="mb-4">
-          <label htmlFor="prompt" className="block text-sm font-medium text-muted-foreground mb-1">
-            Research Prompt (editable)
-          </label>
-          <textarea
-            id="prompt"
-            rows={8}
-            className="w-full rounded-md border border-border bg-background p-3 text-sm text-foreground resize-y"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-          <div className="flex justify-end mt-2 gap-2">
-            <Button size="sm" onClick={improvePrompt} disabled={improving}>
-              {improving ? "Improving..." : "Improve Prompt"}
-            </Button>
-            <Button size="sm" variant="default" onClick={fetchIdeas} disabled={loading}>
-              {loading ? "Researching..." : "Start Research"}
-            </Button>
+          <h2 className="text-xl font-semibold mb-2">Viral Content Ideas</h2>
+          <div className="mb-4 flex flex-wrap gap-3 items-center">
+            <span className="font-medium mr-2">Filter by Topic:</span>
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name="filter-topic"
+                value=""
+                checked={filterTopic === null}
+                onChange={() => setFilterTopic(null)}
+                className="mr-2"
+              />
+              All
+            </label>
+            {topics.map((t) => (
+              <label key={t.word} className="inline-flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="filter-topic"
+                  value={t.word}
+                  checked={filterTopic === t.word}
+                  onChange={() => setFilterTopic(t.word)}
+                  className="mr-2"
+                />
+                {t.word} <span className="ml-1 text-xs text-muted-foreground">({t.count})</span>
+              </label>
+            ))}
           </div>
+          <Button size="sm" onClick={fetchIdeas} disabled={loading}>
+            {loading ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Researching...
+              </>
+            ) : (
+              "Start Research"
+            )}
+          </Button>
           {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
         </div>
 
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Viral Content Ideas</h2>
-
-          {/* Topics with radio buttons */}
-          <div className="mb-4">
-            <h3 className="text-sm font-medium mb-2">Select a Topic or Custom Idea</h3>
-            <div className="flex flex-wrap gap-3 items-center">
-              <label className="inline-flex items-center cursor-pointer">
+        <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-4">
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/4 mt-1" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6 mt-2" />
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            filteredIdeas.map((idea) => (
+              <label
+                key={idea.id}
+                htmlFor={`idea-radio-${idea.id}`}
+                className={cn(
+                  "cursor-pointer rounded-md border p-4 block",
+                  selectedIdeaId === idea.id
+                    ? "border-primary ring-2 ring-primary bg-muted"
+                    : "border-transparent hover:border-border"
+                )}
+              >
                 <input
                   type="radio"
-                  name="topic"
-                  value="custom"
-                  checked={selectedTopic === "custom"}
-                  onChange={() => setSelectedTopic("custom")}
-                  className="mr-2"
+                  id={`idea-radio-${idea.id}`}
+                  name="idea-selection"
+                  className="sr-only"
+                  checked={selectedIdeaId === idea.id}
+                  onChange={() => setSelectedIdeaId(idea.id)}
                 />
-                Custom Idea
+                <CardTitle className="text-lg">{idea.title}</CardTitle>
+                <CardDescription className="flex items-center justify-between mb-2">
+                  <span>Source: {idea.source}</span>
+                  <a
+                    href={idea.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  >
+                    View Source <ExternalLink className="h-3 w-3" />
+                  </a>
+                </CardDescription>
+                <p className="text-sm text-muted-foreground line-clamp-3">{idea.snippet}</p>
               </label>
-              {topics.map((t) => (
-                <label key={t.word} className="inline-flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="topic"
-                    value={t.word}
-                    checked={selectedTopic === t.word}
-                    onChange={() => setSelectedTopic(t.word)}
-                    className="mr-2"
-                  />
-                  {t.word} <span className="ml-1 text-xs text-muted-foreground">({t.count})</span>
-                </label>
-              ))}
-            </div>
-          </div>
+            ))
+          )}
 
-          {/* Custom idea editor */}
-          {selectedTopic === "custom" && (
-            <div className="mb-4 relative">
+          <label
+            htmlFor="idea-radio-custom"
+            className={cn(
+              "cursor-pointer rounded-md border p-4 block",
+              selectedIdeaId === "custom"
+                ? "border-primary ring-2 ring-primary bg-muted"
+                : "border-transparent hover:border-border"
+            )}
+          >
+            <input
+              type="radio"
+              id="idea-radio-custom"
+              name="idea-selection"
+              className="sr-only"
+              checked={selectedIdeaId === "custom"}
+              onChange={() => setSelectedIdeaId("custom")}
+            />
+            <CardTitle className="text-lg mb-2">Or enter your own idea</CardTitle>
+            <div className="relative">
               <textarea
                 rows={4}
                 className="w-full rounded-md border border-border bg-background p-3 text-sm text-foreground resize-y pr-10"
                 placeholder="Enter your custom viral content idea here..."
                 value={customIdea}
-                onChange={(e) => setCustomIdea(e.target.value)}
+                onChange={(e) => {
+                  setCustomIdea(e.target.value);
+                  setSelectedIdeaId("custom");
+                }}
+                onClick={() => setSelectedIdeaId("custom")}
               />
-              <button
+              <Button
                 type="button"
-                onClick={improveCustomIdea}
-                disabled={improving}
-                title="Improve the idea"
-                className="absolute top-2 right-2 p-1 rounded hover:bg-muted/50 transition"
+                size="icon"
+                variant="ghost"
+                className="absolute top-2 right-2 h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  improveCustomIdea();
+                }}
+                disabled={improving || !customIdea.trim()}
+                aria-label="Improve with AI"
               >
-                <Cpu className="h-5 w-5 text-primary" />
-              </button>
+                {improving ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Cpu className="h-4 w-4" />
+                )}
+              </Button>
             </div>
-          )}
+          </label>
+        </div>
 
-          {/* Viral ideas list */}
-          <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-4">
-            {loading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i}>
-                  <CardHeader>
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/4 mt-1" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-5/6 mt-2" />
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              ideas.map((idea) => (
-                <Card
-                  key={idea.id}
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-lg",
-                    selectedIdea?.id === idea.id && "border-primary ring-2 ring-primary"
-                  )}
-                  onClick={() => setSelectedIdea(idea)}
-                >
-                  <CardHeader>
-                    <CardTitle className="text-lg">{idea.title}</CardTitle>
-                    <CardDescription className="flex items-center justify-between">
-                      <span>Source: {idea.source}</span>
-                      <a href={idea.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                        View Source <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-3">{idea.snippet}</p>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-
-          <div className="mt-4">
-            <Button
-              size="lg"
-              className="w-full"
-              disabled={!(selectedTopic && (selectedTopic !== "custom" || customIdea.trim() !== ""))}
-              onClick={handleGenerateHook}
-            >
-              Generate Hook
-            </Button>
-          </div>
+        <div className="mt-4">
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={
+              !selectedIdeaId || (selectedIdeaId === "custom" && !customIdea.trim())
+            }
+            onClick={handleGenerateHook}
+          >
+            Generate Hook
+          </Button>
         </div>
       </div>
     </div>
