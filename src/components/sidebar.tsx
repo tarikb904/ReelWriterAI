@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import React, { useState } from "react";
 import {
-  Anchor,
   History,
   Search,
   Settings,
+  Menu,
+  X,
 } from "lucide-react";
 import {
   Tooltip,
@@ -24,52 +26,73 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const toggleMobile = () => setMobileOpen(!mobileOpen);
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 hidden w-20 flex-col border-r bg-background/80 backdrop-blur-sm sm:flex">
-      <nav className="flex flex-col items-center gap-4 px-3 py-6">
-        <Link href="#" className="flex items-center justify-center">
-          <div className="rounded-full p-2 logo-gradient shadow-md">
-            <Logo size={36} />
-          </div>
-        </Link>
+    <>
+      {/* Mobile toggle button */}
+      <button
+        aria-label={mobileOpen ? "Close menu" : "Open menu"}
+        aria-pressed={mobileOpen}
+        onClick={toggleMobile}
+        className="fixed top-4 left-4 z-30 inline-flex items-center justify-center rounded-md bg-background p-2 text-muted-foreground shadow-md sm:hidden"
+      >
+        {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+      </button>
 
-        <TooltipProvider>
-          {navItems.map((item) => (
-            <Tooltip key={item.href}>
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-20 w-20 flex-col border-r bg-background/80 backdrop-blur-sm transition-transform sm:flex",
+          mobileOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
+        )}
+      >
+        <nav className="flex flex-col items-center gap-4 px-3 py-6">
+          <Link href="#" className="flex items-center justify-center">
+            <div className="rounded-full p-2 logo-gradient shadow-md">
+              <Logo size={36} />
+            </div>
+          </Link>
+
+          <TooltipProvider>
+            {navItems.map((item) => (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-lg transition-all",
+                      pathname === item.href
+                        ? "bg-gradient-to-br from-purple-500 via-indigo-600 to-teal-400 text-white shadow-lg"
+                        : "text-muted-foreground hover:bg-muted/60"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span className="sr-only">{item.label}</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">{item.label}</TooltipContent>
+              </Tooltip>
+            ))}
+          </TooltipProvider>
+        </nav>
+
+        <nav className="mt-auto flex flex-col items-center gap-4 px-3 py-6">
+          <TooltipProvider>
+            <Tooltip>
               <TooltipTrigger asChild>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-lg transition-all",
-                    pathname === item.href
-                      ? "bg-gradient-to-br from-purple-500 via-indigo-600 to-teal-400 text-white shadow-lg"
-                      : "text-muted-foreground hover:bg-muted/60"
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="sr-only">{item.label}</span>
+                <Link href="#" className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60">
+                  <Settings className="h-5 w-5" />
+                  <span className="sr-only">Settings</span>
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">{item.label}</TooltipContent>
+              <TooltipContent side="right">Settings</TooltipContent>
             </Tooltip>
-          ))}
-        </TooltipProvider>
-      </nav>
-
-      <nav className="mt-auto flex flex-col items-center gap-4 px-3 py-6">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="#" className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60">
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Settings</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Settings</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </nav>
-    </aside>
+          </TooltipProvider>
+        </nav>
+      </aside>
+    </>
   );
 }
