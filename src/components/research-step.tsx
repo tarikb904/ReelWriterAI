@@ -51,7 +51,124 @@ export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
 
   const topics = useMemo(() => extractTopics(ideas), [ideas]);
 
-  // ... rest of component unchanged ...
+  const fetchIdeas = async () => {
+    if (!apiKey || !model) {
+      toast.error("API key and model are required.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setIdeas([]);
+    setSelectedIdeaId(null);
+    setFilterTopic(null);
+    setCustomIdea("");
+    try {
+      const prompt = `
+You are an expert content researcher specializing in the "Make Money Online" and "Business Operations" niches. Your task is to generate a list of 20 viral content ideas that are currently trending or highly engaging.
+
+Each idea should include:
+- A concise, catchy title.
+- A brief snippet or summary (max 150 characters).
+- The source or platform where this idea is trending (e.g., Reddit, Hacker News, Blogs).
+- A URL to the original content or a relevant link.
+
+Format the output as a JSON array of objects with keys: id, title, snippet, source, url.
+
+Begin generating the ideas now.
+      `;
+
+      const res = await fetch("/api/ai-research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          apiKey,
+          model,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        setError(errData.error || "Failed to fetch viral content");
+        setIdeas([]);
+      } else {
+        const data = await res.json();
+        setIdeas(data);
+      }
+    } catch (e) {
+      setError("Could not fetch viral content. Please try again later.");
+      setIdeas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const improveCustomIdea = async () => {
+    if (!customIdea.trim()) {
+      toast.error("Please enter your custom idea first.");
+      return;
+    }
+    setImproving(true);
+    try {
+      const promptForImprovement = `
+You are an expert content strategist. Improve the following viral content idea to make it more engaging, clear, and compelling:
+
+"${customIdea}"
+`;
+      const res = await fetch("/api/ai-research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: promptForImprovement, apiKey, model }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to improve idea");
+      } else {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].title) {
+          setCustomIdea(data[0].title);
+          setSelectedIdeaId("custom");
+          toast.success("Idea improved!");
+        } else {
+          toast.error("Could not parse improved idea");
+        }
+      }
+    } catch {
+      toast.error("Failed to improve idea");
+    } finally {
+      setImproving(false);
+    }
+  };
+
+  // Filter ideas by selected topic word
+  const filteredIdeas = useMemo(() => {
+    if (!filterTopic) return ideas;
+    const t = filterTopic.toLowerCase();
+    return ideas.filter((i) => (i.title + " " + i.snippet).toLowerCase().includes(t));
+  }, [ideas, filterTopic]);
+
+  const handleGenerateHook = () => {
+    let ideaToUse: ContentIdea | null = null;
+    if (selectedIdeaId === "custom") {
+      if (!customIdea.trim()) {
+        toast.error("Please enter your custom idea.");
+        return;
+      }
+      ideaToUse = {
+        id: "custom",
+        title: customIdea.trim(),
+        snippet: customIdea.trim(),
+        source: "Custom Idea",
+        url: "",
+      };
+    } else if (selectedIdeaId) {
+      ideaToUse = ideas.find((i) => i.id === selectedIdeaId) || null;
+    }
+    if (!ideaToUse) {
+      toast.error("Please select a content idea or enter a custom idea.");
+      return;
+    }
+    onNext(ideaToUse);
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-8">
@@ -71,7 +188,7 @@ export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
               />
               All
             </label>
-            {topics.map((t: { word: string; count: number }) => (
+            {topics.map((t) => (
               <label key={t.word} className="inline-flex items-center cursor-pointer">
                 <input
                   type="radio"
@@ -85,7 +202,139 @@ export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
               </label>
             ))}
           </div>
-          {/* ... rest of UI unchanged ... */}
+          <Button size="sm" onClick={fetchIdeas} disabled={loading}>
+            {loading ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Researching...
+              </>
+            ) : (
+              "Start Research"
+            )}
+          </Button>
+          {error && (
+            <div className="mt-2 flex items-center space-x-2 text-destructive">
+              <span>{error}</span>
+              <Button size="sm" variant="outline" onClick={fetchIdeas}>
+                Retry
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-4">
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/4 mt-1" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6 mt-2" />
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            filteredIdeas.map((idea) => (
+              <label
+                key={idea.id}
+                htmlFor={`idea-radio-${idea.id}`}
+                className={cn(
+                  "cursor-pointer rounded-md border p-4 block",
+                  selectedIdeaId === idea.id
+                    ? "border-primary ring-2 ring-primary bg-muted"
+                    : "border-transparent hover:border-border"
+                )}
+              >
+                <input
+                  type="radio"
+                  id={`idea-radio-${idea.id}`}
+                  name="idea-selection"
+                  className="sr-only"
+                  checked={selectedIdeaId === idea.id}
+                  onChange={() => setSelectedIdeaId(idea.id)}
+                />
+                <CardTitle className="text-lg">{idea.title}</CardTitle>
+                <CardDescription className="flex items-center justify-between mb-2">
+                  <span>Source: {idea.source}</span>
+                  <a
+                    href={idea.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  >
+                    View Source <ExternalLink className="h-3 w-3" />
+                  </a>
+                </CardDescription>
+                <p className="text-sm text-muted-foreground line-clamp-3">{idea.snippet}</p>
+              </label>
+            ))
+          )}
+
+          <label
+            htmlFor="idea-radio-custom"
+            className={cn(
+              "cursor-pointer rounded-md border p-4 block",
+              selectedIdeaId === "custom"
+                ? "border-primary ring-2 ring-primary bg-muted"
+                : "border-transparent hover:border-border"
+            )}
+          >
+            <input
+              type="radio"
+              id="idea-radio-custom"
+              name="idea-selection"
+              className="sr-only"
+              checked={selectedIdeaId === "custom"}
+              onChange={() => setSelectedIdeaId("custom")}
+            />
+            <CardTitle className="text-lg mb-2">Or enter your own idea</CardTitle>
+            <div className="relative">
+              <textarea
+                rows={4}
+                className="w-full rounded-md border border-border bg-background p-3 text-sm text-foreground resize-y pr-10"
+                placeholder="Enter your custom viral content idea here..."
+                value={customIdea}
+                onChange={(e) => {
+                  setCustomIdea(e.target.value);
+                  setSelectedIdeaId("custom");
+                }}
+                onClick={() => setSelectedIdeaId("custom")}
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="absolute top-2 right-2 h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  improveCustomIdea();
+                }}
+                disabled={improving || !customIdea.trim()}
+                aria-label="Improve with AI"
+              >
+                {improving ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Cpu className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </label>
+        </div>
+
+        <div className="mt-4">
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={!selectedIdeaId || (selectedIdeaId === "custom" && !customIdea.trim())}
+            onClick={handleGenerateHook}
+          >
+            Generate Hook
+          </Button>
         </div>
       </div>
     </div>
