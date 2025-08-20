@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { listSessions, deleteSession, purgeExpiredSessions, type StoredSession } from "@/lib/storage";
+import { listSessions, deleteSession, purgeExpiredSessions, saveSession, type StoredSession } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, ExternalLink, RefreshCw } from "lucide-react";
@@ -14,13 +14,16 @@ export default function HistoryList() {
   const [query, setQuery] = useState("");
   const router = useRouter();
 
+  // Load all saved sessions from local storage, filter last 7 days
   const load = async () => {
     setLoading(true);
     try {
       const items = await listSessions();
       const now = Date.now();
-      const validSessions = items.filter(s => !s.expiresAt || s.expiresAt > now);
-      setSessions(validSessions);
+      const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+      // Filter sessions created within last 7 days
+      const recentSessions = items.filter(s => s.createdAt && s.createdAt >= sevenDaysAgo);
+      setSessions(recentSessions);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load history.");
@@ -108,7 +111,7 @@ export default function HistoryList() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              No saved sessions match your query. Generate a script and it will be saved here.
+              No saved scripts or captions found for the last 7 days. Generate content to see it here.
             </p>
           </CardContent>
         </Card>
