@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,13 +16,30 @@ interface ApiKeyStepProps {
   }, model: string, activeKeyType: string) => void;
 }
 
-const FREE_MODELS = [
-  { id: "openrouter/mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)", keyType: "openRouterApiKey" },
-  { id: "openai/gpt-4", label: "OpenAI: GPT-4", keyType: "openAiApiKey" },
-  { id: "openai/gpt-3.5-turbo", label: "OpenAI: GPT-3.5 Turbo", keyType: "openAiApiKey" },
-  { id: "google/gemini-1", label: "Google: Gemini 1 (free)", keyType: "googleGeminiApiKey" },
-  { id: "anthropic/claude-v1", label: "Anthropic: Claude v1", keyType: "anthropicApiKey" },
-];
+const MODELS_BY_KEY_TYPE: Record<string, { id: string; label: string }[]> = {
+  openRouterApiKey: [
+    { id: "openrouter/mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)" },
+    { id: "z-ai/glm-4.5-air", label: "Z.AI: GLM 4.5 Air (free)" },
+    { id: "qwen/qwen3-coder", label: "Qwen: Qwen3 Coder (free)" },
+    { id: "moonshotai/kimi-k2", label: "MoonshotAI: Kimi K2 (free)" },
+    { id: "cognitivecomputations/venice-uncensored", label: "Venice: Uncensored (free)" },
+    { id: "tencent/hunyuan-a13b-instruct", label: "Tencent: Hunyuan A13B Instruct (free)" },
+    { id: "tngtech/deepseek-r1t2-chimera", label: "TNG: DeepSeek R1T2 Chimera (free)" },
+    { id: "mistralai/mistral-small-3.2-24b", label: "Mistral: Mistral Small 3.2 24B (free)" },
+    { id: "moonshotai/kimi-dev-72b", label: "MoonshotAI: Kimi Dev 72B (free)" },
+  ],
+  openAiApiKey: [
+    { id: "openai/gpt-4", label: "OpenAI: GPT-4" },
+    { id: "openai/gpt-3.5-turbo", label: "OpenAI: GPT-3.5 Turbo" },
+    { id: "openai/gpt-oss-20b", label: "OpenAI: gpt-oss-20b (free)" },
+  ],
+  googleGeminiApiKey: [
+    { id: "google/gemini-1", label: "Google: Gemini 1 (free)" },
+  ],
+  anthropicApiKey: [
+    { id: "anthropic/claude-v1", label: "Anthropic: Claude v1" },
+  ],
+};
 
 export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   const session = useSession();
@@ -31,19 +48,40 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   const [openAiApiKey, setOpenAiApiKey] = useState(session.openAiApiKey ?? "");
   const [googleGeminiApiKey, setGoogleGeminiApiKey] = useState(session.googleGeminiApiKey ?? "");
   const [anthropicApiKey, setAnthropicApiKey] = useState(session.anthropicApiKey ?? "");
-  const [model, setModel] = useState(session.model ?? FREE_MODELS[0].id);
 
+  // Determine initial active key type based on model prefix or default
   const initialKeyType = (() => {
-    if (model.startsWith("openai/")) return "openAiApiKey";
-    if (model.startsWith("google/gemini")) return "googleGeminiApiKey";
-    if (model.startsWith("anthropic/")) return "anthropicApiKey";
+    if (session.model?.startsWith("openai/")) return "openAiApiKey";
+    if (session.model?.startsWith("google/gemini")) return "googleGeminiApiKey";
+    if (session.model?.startsWith("anthropic/")) return "anthropicApiKey";
     return "openRouterApiKey";
   })();
 
   const [activeKeyType, setActiveKeyType] = useState<string>(initialKeyType);
+
+  // Models available for the active key type
+  const [availableModels, setAvailableModels] = useState(MODELS_BY_KEY_TYPE[activeKeyType]);
+
+  // Selected model
+  const [model, setModel] = useState<string>(() => {
+    // If session model is in available models, use it; else first available
+    if (session.model && MODELS_BY_KEY_TYPE[activeKeyType].some(m => m.id === session.model)) {
+      return session.model;
+    }
+    return MODELS_BY_KEY_TYPE[activeKeyType][0].id;
+  });
+
   const [validating, setValidating] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);
   const [message, setMessage] = useState<string>("");
+
+  // Update available models and selected model when activeKeyType changes
+  const onActiveKeyTypeChange = (keyType: string) => {
+    setActiveKeyType(keyType);
+    const models = MODELS_BY_KEY_TYPE[keyType];
+    setAvailableModels(models);
+    setModel(models[0].id);
+  };
 
   const validateKey = async () => {
     let keyToValidate: string | null = null;
@@ -87,14 +125,6 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
         session.setAnthropicApiKey(anthropicApiKey || null);
         session.setModel(model);
         toast.success("API key validated!");
-        console.log("Calling onValidated with keys and model", {
-          openRouterApiKey,
-          openAiApiKey,
-          googleGeminiApiKey,
-          anthropicApiKey,
-          model,
-          activeKeyType,
-        });
         onValidated(
           {
             openRouterApiKey: openRouterApiKey || null,
@@ -137,7 +167,6 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
       <div className="max-w-md w-full glass-card elevated space-y-6">
         <h2 className="text-2xl font-semibold text-center">Enter Your API Keys</h2>
 
-        {/* API key inputs with radio buttons */}
         {[
           { label: "OpenRouter API Key", value: openRouterApiKey, setter: setOpenRouterApiKey, keyType: "openRouterApiKey", id: "openrouter-api-key", placeholder: "sk-or-..." },
           { label: "OpenAI API Key", value: openAiApiKey, setter: setOpenAiApiKey, keyType: "openAiApiKey", id: "openai-api-key", placeholder: "sk-..." },
@@ -150,7 +179,7 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
               id={`key-${keyType}`}
               name="active-api-key"
               checked={activeKeyType === keyType}
-              onChange={() => setActiveKeyType(keyType)}
+              onChange={() => onActiveKeyTypeChange(keyType)}
               className="h-4 w-4"
               aria-label={`Select ${label} as active API key`}
             />
@@ -180,7 +209,6 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
           </div>
         ))}
 
-        {/* Model selector */}
         <div>
           <Label htmlFor="model-select">Select Model</Label>
           <select
@@ -190,7 +218,7 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
             onChange={(e) => setModel(e.target.value)}
             aria-label="Select AI model"
           >
-            {FREE_MODELS.map((m) => (
+            {availableModels.map((m) => (
               <option key={m.id} value={m.id} title={m.label}>
                 {m.label}
               </option>
