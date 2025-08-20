@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Copy, Instagram, Linkedin, Youtube, RefreshCw } from "lucide-react";
 import { Textarea } from "./ui/textarea";
 import { useSession } from "@/context/session-context";
-import { getSession, saveSession, type StoredSession } from "@/lib/storage";
+import { createOrUpdateSession, type StoredSession } from "@/lib/storage";
 
 interface CaptionStepProps {
   script: string;
@@ -31,15 +31,10 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
   const persistCaptions = async (caps: Captions) => {
     if (!session.sessionMeta) return;
     try {
-      const existing = await getSession(session.sessionMeta.sessionId);
-      const updated: StoredSession = {
+      await createOrUpdateSession({
         sessionId: session.sessionMeta.sessionId,
-        createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
-        expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
-        ...(existing || {}),
         captions: caps,
-      };
-      await saveSession(updated);
+      });
     } catch (err) {
       console.error("Failed to save captions:", err);
     }
@@ -74,6 +69,7 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
     }
   };
 
+  // Automatically generate captions on component mount
   useState(() => {
     generateCaptions();
   });
@@ -88,7 +84,7 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
       <div className="lg:col-span-2">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Your Generated Captions</h2>
-           <Button variant="outline" size="sm" onClick={generateCaptions} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={generateCaptions} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Regenerate
           </Button>
@@ -110,7 +106,7 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
                   <CardContent>
                     <p className="whitespace-pre-wrap text-muted-foreground">{captions.instagram}</p>
                     <Button variant="outline" size="sm" className="mt-4" onClick={() => handleCopy(captions.instagram, "Instagram caption")}>
-                      <Copy className="mr-2 h-4 w-4" /> Copy
+                      Copy
                     </Button>
                   </CardContent>
                 </Card>
@@ -120,8 +116,8 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
                   </CardHeader>
                   <CardContent>
                     <p className="whitespace-pre-wrap text-muted-foreground">{captions.linkedin}</p>
-                     <Button variant="outline" size="sm" className="mt-4" onClick={() => handleCopy(captions.linkedin, "LinkedIn caption")}>
-                      <Copy className="mr-2 h-4 w-4" /> Copy
+                    <Button variant="outline" size="sm" className="mt-4" onClick={() => handleCopy(captions.linkedin, "LinkedIn caption")}>
+                      Copy
                     </Button>
                   </CardContent>
                 </Card>
@@ -133,8 +129,8 @@ export function CaptionStep({ script, apiKey, model, onBack }: CaptionStepProps)
                     <ul className="space-y-2 list-disc list-inside text-muted-foreground">
                       {captions.youtubeTitles.map((title, i) => <li key={i}>{title}</li>)}
                     </ul>
-                     <Button variant="outline" size="sm" className="mt-4" onClick={() => handleCopy(captions.youtubeTitles.join('\n'), "YouTube titles")}>
-                      <Copy className="mr-2 h-4 w-4" /> Copy All
+                    <Button variant="outline" size="sm" className="mt-4" onClick={() => handleCopy(captions.youtubeTitles.join('\n'), "YouTube titles")}>
+                      Copy All
                     </Button>
                   </CardContent>
                 </Card>

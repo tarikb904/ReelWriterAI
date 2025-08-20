@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 import { useSession } from "@/context/session-context";
-import { getSession, saveSession, type StoredSession } from "@/lib/storage";
+import { createOrUpdateSession, type StoredSession } from "@/lib/storage";
 
 interface ContentIdea {
   id: string;
@@ -28,13 +28,11 @@ interface ScriptStepProps {
 }
 
 function cleanScriptText(text: string): string {
-  // Remove lines that are section headers like [HOOK], [INTRODUCTION], etc.
-  // Remove lines that are scene suggestions in parentheses.
   const lines = text.split("\n");
   const cleanedLines = lines.filter(line => {
     const trimmed = line.trim();
-    if (trimmed.match(/^\[.*\]$/)) return false; // Remove lines like [HOOK]
-    if (trimmed.match(/^\(.*\)$/)) return false; // Remove lines like (Show a screenshot)
+    if (trimmed.match(/^\[.*\]$/)) return false;
+    if (trimmed.match(/^\(.*\)$/)) return false;
     return true;
   });
   return cleanedLines.join("\n").trim();
@@ -48,15 +46,12 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
   const persistScript = async (text: string) => {
     if (!session.sessionMeta) return;
     try {
-      const existing = await getSession(session.sessionMeta.sessionId);
-      const updated: StoredSession = {
+      await createOrUpdateSession({
         sessionId: session.sessionMeta.sessionId,
-        createdAt: existing?.createdAt ?? session.sessionMeta.createdAt,
-        expiresAt: existing?.expiresAt ?? session.sessionMeta.expiresAt,
-        ...(existing || {}),
+        idea,
+        selectedHook: hook,
         script: { text, edited: true, lastEdited: Date.now() },
-      };
-      await saveSession(updated);
+      });
     } catch (err) {
       console.error("Failed to save script:", err);
     }

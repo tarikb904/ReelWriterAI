@@ -62,3 +62,26 @@ export async function purgeExpiredSessions() {
   await Promise.all(toDelete.map((k) => localforage.removeItem(k)));
   return toDelete.length;
 }
+
+/**
+ * Create a new session with timestamps and save it.
+ * If sessionId is provided, update existing session.
+ */
+export async function createOrUpdateSession(session: Partial<StoredSession> & { sessionId?: string }) {
+  const now = Date.now();
+  const sessionId = session.sessionId ?? `${now.toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  const existing = await getSession(sessionId);
+  const createdAt = existing?.createdAt ?? now;
+  const expiresAt = existing?.expiresAt ?? (now + 7 * 24 * 60 * 60 * 1000); // 7 days expiry
+
+  const newSession: StoredSession = {
+    sessionId,
+    createdAt,
+    expiresAt,
+    ...existing,
+    ...session,
+  };
+
+  await saveSession(newSession);
+  return newSession;
+}
