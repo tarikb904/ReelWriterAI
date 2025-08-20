@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Instagram, Linkedin, Youtube, RefreshCw } from "lucide-react";
+import { Instagram, Linkedin, Youtube, RefreshCw, CheckCircle2 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
 import { useSession } from "@/context/session-context";
 import { createOrUpdateSession } from "@/lib/storage";
 import { saveHistoryEntry } from "@/lib/history";
+import { useRouter } from "next/navigation";
 
 interface CaptionStepProps {
+  idea: { id: string; title: string; snippet: string; source: string; url: string };
+  hook: string;
   script: string;
   apiKey: string;
   model: string;
@@ -25,15 +28,21 @@ interface Captions {
   youtubeTitles: string[];
 }
 
-export function CaptionStep({ script, apiKey, model, onBack, initialCaptions }: CaptionStepProps) {
+export function CaptionStep({ idea, hook, script, apiKey, model, onBack, initialCaptions }: CaptionStepProps) {
   const [captions, setCaptions] = useState<Captions | null>(initialCaptions ?? null);
   const [loading, setLoading] = useState(false);
   const session = useSession();
   const didInit = useRef(false);
+  const router = useRouter();
 
   const persistCaptions = async (caps: Captions) => {
     await saveHistoryEntry({
       type: "captions",
+      ideaTitle: idea.title,
+      ideaSnippet: idea.snippet,
+      source: idea.source,
+      url: idea.url,
+      hook,
       scriptText: script,
       captions: {
         instagram: caps.instagram,
@@ -51,6 +60,29 @@ export function CaptionStep({ script, apiKey, model, onBack, initialCaptions }: 
     } catch (err) {
       console.error("Failed to save captions:", err);
     }
+  };
+
+  const saveProjectAndFinish = async () => {
+    if (!captions) {
+      toast.error("Generate captions before finishing.");
+      return;
+    }
+    await saveHistoryEntry({
+      type: "project",
+      ideaTitle: idea.title,
+      ideaSnippet: idea.snippet,
+      source: idea.source,
+      url: idea.url,
+      hook,
+      scriptText: script,
+      captions: {
+        instagram: captions.instagram,
+        linkedin: captions.linkedin,
+        youtubeTitles: captions.youtubeTitles,
+      },
+    });
+    toast.success("Project saved to History!");
+    router.push("/history");
   };
 
   const generateCaptions = async () => {
@@ -106,10 +138,21 @@ export function CaptionStep({ script, apiKey, model, onBack, initialCaptions }: 
       <div className="lg:col-span-2">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Your Generated Captions</h2>
-          <Button variant="outline" size="sm" onClick={generateCaptions} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Regenerate
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={generateCaptions} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Regenerate
+            </Button>
+            <Button
+              size="sm"
+              className="gap-2"
+              disabled={!captions || !script}
+              onClick={saveProjectAndFinish}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Finish & Save to History
+            </Button>
+          </div>
         </div>
         <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-4">
           {loading ? (

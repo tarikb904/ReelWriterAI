@@ -30,14 +30,39 @@ interface ScriptStepProps {
 }
 
 function cleanScriptText(text: string): string {
-  const lines = text.split("\n");
-  const cleanedLines = lines.filter(line => {
-    const trimmed = line.trim();
-    if (trimmed.match(/^\[.*\]$/)) return false;
-    if (trimmed.match(/^\(.*\)$/)) return false;
-    return true;
-  });
-  return cleanedLines.join("\n").trim();
+  let t = text;
+
+  // Remove common headings/labels
+  t = t.replace(/^\s*\[(?:hook|introduction|intro|point|cta|outro)[^\]]*\]\s*$/gim, "");
+  t = t.replace(/^\s*(hook|intro(?:duction)?|section|point|cta|outro)\s*[:\-].*$/gim, "");
+
+  // Remove timestamps like 0:00–0:05 or 00:00 - 00:05 anywhere in a line
+  t = t.replace(/\b\d{1,2}:\d{2}\s*(?:[–-]|to)\s*\d{1,2}:\d{2}\b/g, "");
+  // Remove single timestamps at start like 0:05:
+  t = t.replace(/^\s*\d{1,2}:\d{2}\s*[:\-]\s*/gim, "");
+
+  // Remove stage directions and on-screen notes
+  t = t.replace(/^\s*(on[- ]screen\s*text|b[- ]?roll|music|sfx|cut\s*to|camera|lower third|graphic|overlay)\s*[:\-].*$/gim, "");
+  // Remove bracketed or parenthetical directions inside lines
+  t = t.replace(/\((?:[^)]{0,120})\)/g, (m) => (m.length <= 6 ? m : "")); // keep tiny emotive parentheses like (ok) else drop
+  t = t.replace(/\[(?:[^\]]{0,120})\]/g, "");
+
+  // Remove leftover double spaces and excessive punctuation spacing
+  t = t.replace(/[ \t]{2,}/g, " ");
+
+  // Normalize newlines: remove empty lines that are just artifacts
+  const lines = t.split("\n")
+    .map(l => l.replace(/\s+/g, " ").trim())
+    .filter(l => l.length > 0);
+
+  // Return as teleprompter-friendly: one sentence per line if possible
+  const joined = lines.join(" ");
+  const sentences = joined
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  return sentences.join("\n").trim();
 }
 
 export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack, initialScript }: ScriptStepProps) {

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, ExternalLink, RefreshCw, FileText, MessageSquare } from "lucide-react";
+import { Trash2, ExternalLink, RefreshCw, FileText, MessageSquare, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { deleteHistoryEntry, listHistoryEntries, purgeOldEntries, type HistoryEntry } from "@/lib/history";
@@ -53,7 +53,6 @@ export default function HistoryList() {
   };
 
   const handleOpen = async (e: HistoryEntry) => {
-    // Prepare a minimal payload for the dashboard opener
     const payload = {
       idea: e.ideaTitle ? { title: e.ideaTitle, snippet: e.ideaSnippet, url: e.url, source: e.source } : undefined,
       selectedHook: e.hook,
@@ -81,6 +80,28 @@ export default function HistoryList() {
       return false;
     });
   }, [entries, query]);
+
+  const badgeFor = (type: HistoryEntry["type"]) => {
+    if (type === "project") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+          <Package className="h-3.5 w-3.5" /> Project
+        </span>
+      );
+    }
+    if (type === "script") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+          <FileText className="h-3.5 w-3.5" /> Script
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+        <MessageSquare className="h-3.5 w-3.5" /> Captions
+      </span>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -120,12 +141,9 @@ export default function HistoryList() {
           <Card key={e.id} className="overflow-hidden">
             <CardHeader className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
-                  {e.type === "script" ? <FileText className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />}
-                  {e.type === "script" ? "Script" : "Captions"}
-                </span>
+                {badgeFor(e.type)}
                 <CardTitle className="text-base">
-                  {e.ideaTitle || (e.type === "captions" ? "Captions" : "Script")}
+                  {e.ideaTitle || (e.type === "captions" ? "Captions" : e.type === "project" ? "Project" : "Script")}
                 </CardTitle>
               </div>
               <div className="flex items-center gap-2">

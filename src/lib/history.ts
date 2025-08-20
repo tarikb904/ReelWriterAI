@@ -3,7 +3,7 @@ import localforage from "localforage";
 export type HistoryEntry = {
   id: string;
   createdAt: number;
-  type: "script" | "captions";
+  type: "script" | "captions" | "project";
   // common context
   ideaTitle?: string;
   ideaSnippet?: string;
@@ -40,7 +40,6 @@ export async function listHistoryEntries(): Promise<HistoryEntry[]> {
   await localforage.iterate<HistoryEntry, void>((value) => {
     if (value) items.push(value);
   });
-  // sort desc
   items.sort((a, b) => b.createdAt - a.createdAt);
   return items;
 }

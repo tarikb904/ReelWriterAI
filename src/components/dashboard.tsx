@@ -105,7 +105,6 @@ export default function Dashboard() {
   };
   const handleBackToScript = () => {
     setStep("script");
-    // keep finalScript so the editor is not emptied
   };
 
   const titles: Record<AppStep, string> = {
@@ -153,8 +152,10 @@ export default function Dashboard() {
           />
         ) : null;
       case "captions":
-        return finalScript && activeApiKey ? (
+        return finalScript && selectedIdea && selectedHook && activeApiKey ? (
           <CaptionStep
+            idea={selectedIdea}
+            hook={selectedHook}
             script={finalScript}
             apiKey={activeApiKey}
             model={model}

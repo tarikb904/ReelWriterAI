@@ -14,15 +14,23 @@ export async function POST(request: Request) {
   }
 
   const prompt = `
-You are an expert short-form video scriptwriter specializing in creating engaging and addictive scripts for platforms like TikTok, Instagram Reels, and YouTube Shorts, focusing on the "Make Money Online" and "Business Operations" niches.
+You are an expert short-form video scriptwriter for TikTok, Reels, and Shorts in the "Make Money Online" and "Business Operations" niches.
 
-Your task is to write a complete 2-minute video script based on the following content idea and winning hook.
+Task: Write a complete ~2-minute script based on the content idea and winning hook below. Apply best-practice storytelling (context vs conflict "dance", but/therefore causality, varied rhythm, conversational tone, start-with-the-end, unique lens, strong hook) and optimize for high retention.
 
 Content Idea Title: "${idea.title}"
 Content Idea Snippet: "${idea.snippet}"
-Winning Hook: "${hook}"
+Winning Hook (must be the opening line verbatim): "${hook}"
 
-[... full instructions omitted here for brevity in code — kept as previously implemented ...]
+Output Rules (strict):
+- Output plain spoken narration only, suitable for a teleprompter.
+- No timestamps. No labels. No section headings. No bullet points. No numbering.
+- No stage directions or camera notes (e.g., "On-screen text:", "Cut to:", "B-roll:", "Music:", "SFX:").
+- No bracketed [] or parenthetical () directions.
+- Write in a friendly, conversational voice. One sentence per line for readability.
+- End with a natural, human CTA that fits the narrative (follow, comment, or save).
+
+Begin with the hook exactly as provided. Then flow into the story and deliver clear, useful value. Keep it concise, engaging, and loop-ready.
 `;
 
   try {
