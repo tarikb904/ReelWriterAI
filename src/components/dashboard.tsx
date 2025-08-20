@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "./sidebar";
 import { ApiKeyStep } from "./api-key-step";
 import { ResearchStep, type ContentIdea } from "./research-step";
@@ -146,7 +146,7 @@ export default function Dashboard() {
     setFinalScript(null);
   };
 
-  const renderStep = () => {
+  function renderStep() {
     switch (step) {
       case "apiKey":
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
@@ -190,13 +190,13 @@ export default function Dashboard() {
       default:
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
     }
-  };
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Sidebar />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:p-8 md:pl-24">
-        <div className="flex items-center">
+      <main className="flex flex-1 flex-col gap-4 p-4 md:p-8 md:pl-28">
+        <div className="flex items-center ml-1">
           <h1 className="text-3xl font-semibold">
             {step === "apiKey" ? "Enter API Keys" : `Step ${["apiKey", "research", "hooks", "script", "captions"].indexOf(step)}: ${step.charAt(0).toUpperCase() + step.slice(1)}`}
           </h1>
