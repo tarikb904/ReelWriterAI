@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,16 +12,52 @@ interface ApiKeyStepProps {
 }
 
 const FREE_MODELS = [
-  "mistralai/mistral-7b-instruct:free",
-  "openai/gpt-3.5-turbo",
-  "openai/gpt-4",
-  // Add more free models here if needed
+  {
+    id: "openai/gpt-oss-20b",
+    label: "OpenAI: gpt-oss-20b (free) - 21B param MoE, 131K context",
+  },
+  {
+    id: "z-ai/glm-4.5-air",
+    label: "Z.AI: GLM 4.5 Air (free) - 35.2B param MoE, 131K context",
+  },
+  {
+    id: "qwen/qwen3-coder",
+    label: "Qwen: Qwen3 Coder (free) - 480B param MoE, 262K context",
+  },
+  {
+    id: "moonshotai/kimi-k2",
+    label: "MoonshotAI: Kimi K2 (free) - 1T param MoE, 33K context",
+  },
+  {
+    id: "cognitivecomputations/venice-uncensored",
+    label: "Venice: Uncensored (free) - Mistral 24B variant, 33K context",
+  },
+  {
+    id: "google/gemma-3n-2b",
+    label: "Google: Gemma 3n 2B (free) - 2B param multimodal, 8K context",
+  },
+  {
+    id: "tencent/hunyuan-a13b-instruct",
+    label: "Tencent: Hunyuan A13B Instruct (free) - 80B param MoE, 33K context",
+  },
+  {
+    id: "tngtech/deepseek-r1t2-chimera",
+    label: "TNG: DeepSeek R1T2 Chimera (free) - 671B param MoE, 164K context",
+  },
+  {
+    id: "mistralai/mistral-small-3.2-24b",
+    label: "Mistral: Mistral Small 3.2 24B (free) - 24B param, 131K context",
+  },
+  {
+    id: "moonshotai/kimi-dev-72b",
+    label: "MoonshotAI: Kimi Dev 72B (free) - 72B param fine-tuned for code",
+  },
 ];
 
 export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   const session = useSession();
   const [apiKey, setApiKey] = useState(session.apiKey ?? "");
-  const [model, setModel] = useState(session.model ?? FREE_MODELS[0]);
+  const [model, setModel] = useState(session.model ?? FREE_MODELS[0].id);
   const [validating, setValidating] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);
   const [message, setMessage] = useState<string>("");
@@ -86,8 +122,8 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
             onChange={(e) => setModel(e.target.value)}
           >
             {FREE_MODELS.map((m) => (
-              <option key={m} value={m}>
-                {m}
+              <option key={m.id} value={m.id} title={m.label}>
+                {m.label}
               </option>
             ))}
           </select>
