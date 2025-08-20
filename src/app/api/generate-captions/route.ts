@@ -90,8 +90,28 @@ Generate the captions and titles now.
       rawContent = await callOpenRouterChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     }
 
-    // Basic parsing to return raw content as JSON
-    return NextResponse.json(rawContent ? { ...parseCaptions(rawContent) } : { error: "No content generated" });
+    // Parse and format output for better preview
+    const parsed = parseCaptions(rawContent);
+
+    // Format Instagram caption for preview: replace newlines with <br> and preserve paragraphs
+    const instagramPreview = parsed.instagram
+      .split(/\n{2,}/) // split by double newlines for paragraphs
+      .map(paragraph => paragraph.trim().replace(/\n/g, "<br />"))
+      .join("<br /><br />");
+
+    // Format LinkedIn caption similarly
+    const linkedinPreview = parsed.linkedin
+      .split(/\n{2,}/)
+      .map(paragraph => paragraph.trim().replace(/\n/g, "<br />"))
+      .join("<br /><br />");
+
+    return NextResponse.json({
+      instagram: parsed.instagram,
+      instagramPreview,
+      linkedin: parsed.linkedin,
+      linkedinPreview,
+      youtubeTitles: parsed.youtubeTitles,
+    });
 
   } catch (error) {
     console.error("Error generating captions:", error);
