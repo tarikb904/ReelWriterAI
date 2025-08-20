@@ -3,8 +3,6 @@
 import Link from "next/link";
 import {
   Anchor,
-  Captions,
-  FileText,
   History,
   Search,
   Settings,
@@ -21,9 +19,6 @@ import Logo from "./logo";
 
 const navItems = [
   { href: "/", label: "Research", icon: Search },
-  { href: "/hook", label: "Hook", icon: Anchor },
-  { href: "/script", label: "Script", icon: FileText },
-  { href: "/captions", label: "Captions", icon: Captions },
   { href: "/history", label: "History", icon: History },
 ];
 
