@@ -14,39 +14,58 @@ export async function POST(request: Request) {
   }
 
   const prompt = `
-You are an expert short-form video scriptwriter specializing in the "Make Money Online" and "Business Operations" niches. Your goal is to create highly engaging and scroll-stopping video hooks.
+You are an expert short-form video scriptwriter specializing in creating high-performing hooks for platforms like TikTok, Instagram Reels, and YouTube Shorts.
 
-Based on the following viral content idea, generate exactly 10 compelling video hooks.
+Let's break down the process of creating a high-performing hook into detailed steps, drawing from the information in the video:
 
-**Content Idea Title:** "${idea.title}"
-**Content Idea Snippet:** "${idea.snippet}"
+1. Identify Your Visuals
+   - Begin by taking a close look at the video footage or visual assets you plan to use for the first 3-5 seconds of your video.
+   - Ask yourself: What is the main subject of the visuals? Is there any movement or action? Are the visuals clear and easy to understand, or are they abstract? Do the visuals evoke any specific emotions?
+   - Determine the "key visual" – the most compelling or attention-grabbing element within those first few seconds.
 
-**Instructions:**
-1.  Each hook must be short, punchy, and under 15 words.
-2.  Use strong, attention-grabbing language.
-3.  Focus on curiosity, controversy, a surprising fact, or a common pain point.
-4.  Do not number the hooks in the output.
-5.  Each hook must be on a new line.
+2. Determine Interesting Angles
+   - Delve into the core message or story of your video and identify the most compelling "angles" or pieces of information.
+   - Consider: Is there anything surprising or unexpected about your topic? Can you present your topic in a way that challenges conventional wisdom? Is there a problem that your video solves? Is there something new or unknown that you can reveal?
+   - Evaluate the potential for "contrast" within each angle.
 
-**Example Output Format:**
-This is the first hook.
-Here is another amazing hook.
-And a third one right here.
+3. Write the Spoken Hook
+   - Craft a concise spoken hook, aiming for two to four lines of dialogue.
+   - Incorporate context, lean, contrast, and optionally a contrarian snapback.
 
-Begin generating the hooks now:
+4. Add On-Screen Text
+   - Use on-screen text to reinforce the visual and spoken hook.
+   - Keep text brief and easy to read.
+
+5. Review and Assess
+   - Watch the hook with both visual and audio elements.
+   - Evaluate clarity, attention-grabbing power, and alignment.
+
+Key Takeaways:
+- Alignment is essential.
+- Visuals are paramount.
+- Comprehension is key.
+- Iterate and refine.
+
+Content Idea Title: "${idea.title}"
+Content Idea Snippet: "${idea.snippet}"
+
+Generate exactly 10 compelling video hooks based on the above principles.
+Each hook should be short, punchy, and under 15 words.
+Do not number the hooks; list each on a new line.
+Begin generating now:
 `;
 
   try {
     let generatedText = "";
 
     if (model.startsWith("openai/")) {
-      generatedText = await callOpenAIChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+      const openAiModel = model.replace(/^openai\//, "");
+      generatedText = await callOpenAIChatCompletion(apiKey, [{ role: "user", content: prompt }], openAiModel);
     } else if (model.startsWith("google/gemini")) {
       generatedText = await callGoogleGeminiChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     } else if (model.startsWith("anthropic/")) {
       generatedText = await callAnthropicClaudeChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     } else {
-      // Default to OpenRouter
       generatedText = await callOpenRouterChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     }
 
@@ -54,8 +73,9 @@ Begin generating the hooks now:
 
     return NextResponse.json({ hooks });
 
-  } catch (error: any) {
-    console.error("Error generating hooks:", error);
-    return NextResponse.json({ error: error.message || "An internal error occurred while generating hooks." }, { status: 500 });
+  } catch (err: unknown) {
+    console.error("Error generating hooks:", err);
+    const message = err instanceof Error ? err.message : "An internal error occurred while generating hooks.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
