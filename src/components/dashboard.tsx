@@ -21,7 +21,7 @@ export default function Dashboard() {
   const [captions, setCaptions] = useState<any>(null);
   const [model, setModel] = useState(session.model || "mistralai/mistral-7b-instruct:free");
 
-  // Determine the active API key based on model prefix
+  // Determine the active API key based on model prefix and active key type
   const getActiveApiKey = () => {
     if (model.startsWith("openai/")) return session.openAiApiKey ?? "";
     if (model.startsWith("google/gemini")) return session.googleGeminiApiKey ?? "";
