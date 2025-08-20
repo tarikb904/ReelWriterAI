@@ -22,6 +22,20 @@ interface ResearchStepProps {
   onNext: (idea: ContentIdea) => void;
 }
 
+const DEFAULT_PROMPT = `
+You are an expert content researcher specializing in the "Make Money Online" and "Business Operations" niches. Your task is to generate a list of 20 viral content ideas that are currently trending or highly engaging.
+
+Each idea should include:
+- A concise, catchy title.
+- A brief snippet or summary (max 150 characters).
+- The source or platform where this idea is trending (e.g., Reddit, Hacker News, Blogs).
+- A URL to the original content or a relevant link.
+
+Format the output as a JSON array of objects with keys: id, title, snippet, source, url.
+
+Begin generating the ideas now.
+`;
+
 const STOPWORDS = new Set([
   "the","and","for","to","of","in","on","a","is","how","this","that","with","you","your","are","my","i","be","from","by","at","it"
 ]);
@@ -41,6 +55,7 @@ function extractTopics(ideas: ContentIdea[], topN = 8) {
 }
 
 export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
+  const [prompt, setPrompt] = useState<string>(DEFAULT_PROMPT.trim());
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
@@ -56,6 +71,10 @@ export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
       toast.error("API key and model are required.");
       return;
     }
+    if (!prompt.trim()) {
+      toast.error("Please enter a research prompt.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setIdeas([]);
@@ -63,20 +82,6 @@ export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
     setFilterTopic(null);
     setCustomIdea("");
     try {
-      const prompt = `
-You are an expert content researcher specializing in the "Make Money Online" and "Business Operations" niches. Your task is to generate a list of 20 viral content ideas that are currently trending or highly engaging.
-
-Each idea should include:
-- A concise, catchy title.
-- A brief snippet or summary (max 150 characters).
-- The source or platform where this idea is trending (e.g., Reddit, Hacker News, Blogs).
-- A URL to the original content or a relevant link.
-
-Format the output as a JSON array of objects with keys: id, title, snippet, source, url.
-
-Begin generating the ideas now.
-      `;
-
       const res = await fetch("/api/ai-research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -86,7 +91,6 @@ Begin generating the ideas now.
           model,
         }),
       });
-
       if (!res.ok) {
         const errData = await res.json();
         setError(errData.error || "Failed to fetch viral content");
@@ -173,6 +177,17 @@ You are an expert content strategist. Improve the following viral content idea t
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="flex-1 flex flex-col">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">Research Prompt</h2>
+          <textarea
+            rows={8}
+            className="w-full rounded-md border border-border bg-background p-4 text-sm font-mono text-foreground resize-y"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            spellCheck={false}
+          />
+        </div>
+
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-2">Viral Content Ideas</h2>
           <div className="mb-4 flex flex-wrap gap-3 items-center">
