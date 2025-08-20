@@ -22,21 +22,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required parameters: prompt, apiKey, model" }, { status: 400 });
     }
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }]
-      })
-    });
+    let response;
+    if (model.startsWith("openai/")) {
+      // Call OpenAI API
+      response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+    } else {
+      // Default to OpenRouter
+      response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenRouter API Error:", errorText);
       return NextResponse.json({ error: `Failed to generate research. API returned: ${errorText}` }, { status: response.status });
     }
 
