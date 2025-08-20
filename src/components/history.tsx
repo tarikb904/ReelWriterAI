@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { listSessions, deleteSession, purgeExpiredSessions, StoredSession } from "@/lib/storage";
+import { listSessions, deleteSession, purgeExpiredSessions, type StoredSession } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, ExternalLink, RefreshCw } from "lucide-react";
@@ -18,7 +18,6 @@ export default function HistoryList() {
     setLoading(true);
     try {
       const items = await listSessions();
-      // Filter sessions to only those not expired (7 days)
       const now = Date.now();
       const validSessions = items.filter(s => !s.expiresAt || s.expiresAt > now);
       setSessions(validSessions);
@@ -57,7 +56,6 @@ export default function HistoryList() {
 
   const handleOpen = async (s: StoredSession) => {
     try {
-      // Store session in sessionStorage for dashboard to pick up
       sessionStorage.setItem("reelwriter-open-session", JSON.stringify(s));
       toast.success("Opening session...");
       router.push("/");
