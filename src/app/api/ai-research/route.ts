@@ -24,7 +24,8 @@ export async function POST(request: Request) {
 
     let response;
     if (model.startsWith("openai/")) {
-      // Call OpenAI API
+      // Strip "openai/" prefix for OpenAI API
+      const openAiModel = model.replace(/^openai\//, "");
       response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model,
+          model: openAiModel,
           messages: [{ role: "user", content: prompt }]
         })
       });
