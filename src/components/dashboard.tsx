@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "./sidebar";
 import { ApiKeyStep } from "./api-key-step";
 import { ResearchStep, type ContentIdea } from "./research-step";
@@ -18,21 +18,69 @@ export default function Dashboard() {
   const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
   const [selectedHook, setSelectedHook] = useState<string | null>(null);
   const [finalScript, setFinalScript] = useState<string | null>(null);
+  const [captions, setCaptions] = useState<any>(null);
   const [model, setModel] = useState(session.model || "mistralai/mistral-7b-instruct:free");
 
-  const handleApiKeyValidated = (key: string) => {
+  // Load opened session from sessionStorage on mount
+  useEffect(() => {
+    const openSessionRaw = sessionStorage.getItem("reelwriter-open-session");
+    if (openSessionRaw) {
+      try {
+        const openSession = JSON.parse(openSessionRaw);
+        sessionStorage.removeItem("reelwriter-open-session");
+
+        if (openSession.apiKey) {
+          session.setApiKey(openSession.apiKey);
+        }
+        if (openSession.model) {
+          setModel(openSession.model);
+          session.setModel(openSession.model);
+        }
+        if (openSession.idea) {
+          setSelectedIdea(openSession.idea);
+        }
+        if (openSession.selectedHook) {
+          setSelectedHook(openSession.selectedHook);
+        }
+        if (openSession.script?.text) {
+          setFinalScript(openSession.script.text);
+        }
+        if (openSession.captions) {
+          setCaptions(openSession.captions);
+        }
+
+        // Determine step based on loaded data
+        if (openSession.captions) {
+          setStep("captions");
+        } else if (openSession.script?.text) {
+          setStep("script");
+        } else if (openSession.selectedHook) {
+          setStep("hooks");
+        } else if (openSession.apiKey) {
+          setStep("research");
+        } else {
+          setStep("apiKey");
+        }
+      } catch (err) {
+        console.error("Failed to parse opened session:", err);
+      }
+    }
+  }, [session]);
+
+  const handleApiKeyValidated = (key: string, selectedModel: string) => {
     session.setApiKey(key);
+    session.setModel(selectedModel);
+    setModel(selectedModel);
     setStep("research");
   };
 
-  const handleProceedToHooks = (
-    idea: ContentIdea,
-    apiKeyOverride?: string,
-    selectedModel?: string
-  ) => {
+  const handleProceedToHooks = (idea: ContentIdea, apiKeyOverride?: string, selectedModel?: string) => {
     setSelectedIdea(idea);
     if (apiKeyOverride) session.setApiKey(apiKeyOverride);
-    if (selectedModel) setModel(selectedModel);
+    if (selectedModel) {
+      setModel(selectedModel);
+      session.setModel(selectedModel);
+    }
     setStep("hooks");
   };
 
