@@ -22,6 +22,20 @@ interface ResearchStepProps {
   onNext: (idea: ContentIdea) => void;
 }
 
+const DEFAULT_PROMPT = `
+You are an expert content researcher specializing in the "Make Money Online" and "Business Operations" niches. Your task is to generate a list of 20 viral content ideas that are currently trending or highly engaging.
+
+Each idea should include:
+- A concise, catchy title.
+- A brief snippet or summary (max 150 characters).
+- The source or platform where this idea is trending (e.g., Reddit, Hacker News, Blogs).
+- A URL to the original content or a relevant link.
+
+Format the output as a JSON array of objects with keys: id, title, snippet, source, url.
+
+Begin generating the ideas now.
+`;
+
 const STOPWORDS = new Set([
   "the","and","for","to","of","in","on","a","is","how","this","that","with","you","your","are","my","i","be","from","by","at","it"
 ]);
@@ -41,6 +55,7 @@ function extractTopics(ideas: ContentIdea[], topN = 8) {
 }
 
 export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
+  const [prompt, setPrompt] = useState<string>(DEFAULT_PROMPT.trim());
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
@@ -50,6 +65,10 @@ export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchIdeas = async () => {
+    if (!prompt.trim()) {
+      toast.error("Please enter a research prompt.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setIdeas([]);
@@ -61,19 +80,7 @@ export function ResearchStep({ apiKey, model, onNext }: ResearchStepProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `
-You are an expert content researcher specializing in the "Make Money Online" and "Business Operations" niches. Your task is to generate a list of 20 viral content ideas that are currently trending or highly engaging.
-
-Each idea should include:
-- A concise, catchy title.
-- A brief snippet or summary (max 150 characters).
-- The source or platform where this idea is trending (e.g., Reddit, Hacker News, Blogs).
-- A URL to the original content or a relevant link.
-
-Format the output as a JSON array of objects with keys: id, title, snippet, source, url.
-
-Begin generating the ideas now.
-          `,
+          prompt,
           apiKey,
           model,
         }),
@@ -167,49 +174,59 @@ You are an expert content strategist. Improve the following viral content idea t
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="flex-1 flex flex-col">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold mb-2">Viral Content Ideas</h2>
-          <div className="mb-4 flex flex-wrap gap-3 items-center">
-            <span className="font-medium mr-2">Filter by Topic:</span>
-            <label className="inline-flex items-center cursor-pointer">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">Edit Research Prompt</h2>
+          <textarea
+            rows={8}
+            className="w-full rounded-md border border-border bg-background p-4 text-sm font-mono text-foreground resize-y"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            spellCheck={false}
+          />
+        </div>
+
+        <div className="mb-4 flex flex-wrap gap-3 items-center">
+          <span className="font-medium mr-2">Filter by Topic:</span>
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="radio"
+              name="filter-topic"
+              value=""
+              checked={filterTopic === null}
+              onChange={() => setFilterTopic(null)}
+              className="mr-2"
+            />
+            All
+          </label>
+          {topics.map((t) => (
+            <label key={t.word} className="inline-flex items-center cursor-pointer">
               <input
                 type="radio"
                 name="filter-topic"
-                value=""
-                checked={filterTopic === null}
-                onChange={() => setFilterTopic(null)}
+                value={t.word}
+                checked={filterTopic === t.word}
+                onChange={() => setFilterTopic(t.word)}
                 className="mr-2"
               />
-              All
+              {t.word} <span className="ml-1 text-xs text-muted-foreground">({t.count})</span>
             </label>
-            {topics.map((t) => (
-              <label key={t.word} className="inline-flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="filter-topic"
-                  value={t.word}
-                  checked={filterTopic === t.word}
-                  onChange={() => setFilterTopic(t.word)}
-                  className="mr-2"
-                />
-                {t.word} <span className="ml-1 text-xs text-muted-foreground">({t.count})</span>
-              </label>
-            ))}
-          </div>
-          <Button size="sm" onClick={fetchIdeas} disabled={loading}>
-            {loading ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Researching...
-              </>
-            ) : (
-              "Start Research"
-            )}
-          </Button>
-          {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+          ))}
         </div>
 
-        <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-4">
+        <Button size="sm" onClick={fetchIdeas} disabled={loading}>
+          {loading ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              Researching...
+            </>
+          ) : (
+            "Start Research"
+          )}
+        </Button>
+
+        {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+
+        <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-4 mt-6">
           {loading ? (
             Array.from({ length: 6 }).map((_, i) => (
               <Card key={i}>
