@@ -35,20 +35,21 @@ Generate the script now.
     let generatedText = "";
 
     if (model.startsWith("openai/")) {
-      generatedText = await callOpenAIChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+      const openAiModel = model.replace(/^openai\//, "");
+      generatedText = await callOpenAIChatCompletion(apiKey, [{ role: "user", content: prompt }], openAiModel);
     } else if (model.startsWith("google/gemini")) {
       generatedText = await callGoogleGeminiChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     } else if (model.startsWith("anthropic/")) {
       generatedText = await callAnthropicClaudeChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     } else {
-      // Default to OpenRouter
       generatedText = await callOpenRouterChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     }
 
     return NextResponse.json({ script: generatedText });
 
-  } catch (error) {
-    console.error("Error generating script:", error);
-    return NextResponse.json({ error: "An internal error occurred while generating the script." }, { status: 500 });
+  } catch (err: unknown) {
+    console.error("Error generating script:", err);
+    const message = err instanceof Error ? err.message : "An internal error occurred while generating the script.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
