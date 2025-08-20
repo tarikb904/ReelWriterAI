@@ -10,14 +10,16 @@ type SessionMeta = {
 };
 
 type SessionContextValue = {
-  apiKey: string | null;
-  setApiKey: (key: string | null) => void;
+  openRouterApiKey: string | null;
+  setOpenRouterApiKey: (key: string | null) => void;
+  openAiApiKey: string | null;
+  setOpenAiApiKey: (key: string | null) => void;
+  googleGeminiApiKey: string | null;
+  setGoogleGeminiApiKey: (key: string | null) => void;
+  anthropicApiKey: string | null;
+  setAnthropicApiKey: (key: string | null) => void;
   model: string;
   setModel: (m: string) => void;
-  redditClientId: string | null;
-  setRedditClientId: (id: string | null) => void;
-  redditClientSecret: string | null;
-  setRedditClientSecret: (s: string | null) => void;
   sessionMeta: SessionMeta | null;
   createNewSession: (title?: string) => SessionMeta;
   clearSession: () => void;
@@ -44,9 +46,33 @@ function generateId(): string {
 }
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [apiKey, setApiKeyState] = useState<string | null>(() => {
+  const [openRouterApiKey, setOpenRouterApiKeyState] = useState<string | null>(() => {
     try {
-      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-apiKey`);
+      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-openrouter-apiKey`);
+    } catch {
+      return null;
+    }
+  });
+
+  const [openAiApiKey, setOpenAiApiKeyState] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-openai-apiKey`);
+    } catch {
+      return null;
+    }
+  });
+
+  const [googleGeminiApiKey, setGoogleGeminiApiKeyState] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-google-gemini-apiKey`);
+    } catch {
+      return null;
+    }
+  });
+
+  const [anthropicApiKey, setAnthropicApiKeyState] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-anthropic-apiKey`);
     } catch {
       return null;
     }
@@ -57,22 +83,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-model`) || "mistralai/mistral-7b-instruct:free";
     } catch {
       return "mistralai/mistral-7b-instruct:free";
-    }
-  });
-
-  const [redditClientId, setRedditClientIdState] = useState<string | null>(() => {
-    try {
-      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-reddit-id`);
-    } catch {
-      return null;
-    }
-  });
-
-  const [redditClientSecret, setRedditClientSecretState] = useState<string | null>(() => {
-    try {
-      return sessionStorage.getItem(`${SESSION_STORAGE_KEY}-reddit-secret`);
-    } catch {
-      return null;
     }
   });
 
@@ -87,10 +97,31 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      if (apiKey) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-apiKey`, apiKey);
-      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-apiKey`);
+      if (openRouterApiKey) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-openrouter-apiKey`, openRouterApiKey);
+      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-openrouter-apiKey`);
     } catch {}
-  }, [apiKey]);
+  }, [openRouterApiKey]);
+
+  useEffect(() => {
+    try {
+      if (openAiApiKey) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-openai-apiKey`, openAiApiKey);
+      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-openai-apiKey`);
+    } catch {}
+  }, [openAiApiKey]);
+
+  useEffect(() => {
+    try {
+      if (googleGeminiApiKey) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-google-gemini-apiKey`, googleGeminiApiKey);
+      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-google-gemini-apiKey`);
+    } catch {}
+  }, [googleGeminiApiKey]);
+
+  useEffect(() => {
+    try {
+      if (anthropicApiKey) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-anthropic-apiKey`, anthropicApiKey);
+      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-anthropic-apiKey`);
+    } catch {}
+  }, [anthropicApiKey]);
 
   useEffect(() => {
     try {
@@ -101,39 +132,29 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      if (redditClientId) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-reddit-id`, redditClientId);
-      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-reddit-id`);
-    } catch {}
-  }, [redditClientId]);
-
-  useEffect(() => {
-    try {
-      if (redditClientSecret) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-reddit-secret`, redditClientSecret);
-      else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-reddit-secret`);
-    } catch {}
-  }, [redditClientSecret]);
-
-  useEffect(() => {
-    try {
       if (sessionMeta) sessionStorage.setItem(`${SESSION_STORAGE_KEY}-meta`, JSON.stringify(sessionMeta));
       else sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-meta`);
     } catch {}
   }, [sessionMeta]);
 
-  const setApiKey = (k: string | null) => {
-    setApiKeyState(k);
+  const setOpenRouterApiKey = (k: string | null) => {
+    setOpenRouterApiKeyState(k);
+  };
+
+  const setOpenAiApiKey = (k: string | null) => {
+    setOpenAiApiKeyState(k);
+  };
+
+  const setGoogleGeminiApiKey = (k: string | null) => {
+    setGoogleGeminiApiKeyState(k);
+  };
+
+  const setAnthropicApiKey = (k: string | null) => {
+    setAnthropicApiKeyState(k);
   };
 
   const setModel = (m: string) => {
     setModelState(m);
-  };
-
-  const setRedditClientId = (id: string | null) => {
-    setRedditClientIdState(id);
-  };
-
-  const setRedditClientSecret = (s: string | null) => {
-    setRedditClientSecretState(s);
   };
 
   const createNewSession = (title?: string) => {
@@ -148,29 +169,33 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearSession = () => {
-    setApiKeyState(null);
+    setOpenRouterApiKeyState(null);
+    setOpenAiApiKeyState(null);
+    setGoogleGeminiApiKeyState(null);
+    setAnthropicApiKeyState(null);
     setModelState("mistralai/mistral-7b-instruct:free");
-    setRedditClientIdState(null);
-    setRedditClientSecretState(null);
     setSessionMeta(null);
     try {
-      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-apiKey`);
+      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-openrouter-apiKey`);
+      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-openai-apiKey`);
+      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-google-gemini-apiKey`);
+      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-anthropic-apiKey`);
       sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-model`);
-      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-reddit-id`);
-      sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-reddit-secret`);
       sessionStorage.removeItem(`${SESSION_STORAGE_KEY}-meta`);
     } catch {}
   };
 
   const value: SessionContextValue = {
-    apiKey,
-    setApiKey,
+    openRouterApiKey,
+    setOpenRouterApiKey,
+    openAiApiKey,
+    setOpenAiApiKey,
+    googleGeminiApiKey,
+    setGoogleGeminiApiKey,
+    anthropicApiKey,
+    setAnthropicApiKey,
     model,
     setModel,
-    redditClientId,
-    setRedditClientId,
-    redditClientSecret,
-    setRedditClientSecret,
     sessionMeta,
     createNewSession,
     clearSession,

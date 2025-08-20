@@ -8,66 +8,49 @@ import { toast } from "sonner";
 import { useSession } from "@/context/session-context";
 
 interface ApiKeyStepProps {
-  onValidated: (apiKey: string, model: string) => void;
+  onValidated: (keys: {
+    openRouterApiKey: string | null;
+    openAiApiKey: string | null;
+    googleGeminiApiKey: string | null;
+    anthropicApiKey: string | null;
+  }, model: string) => void;
 }
 
 const FREE_MODELS = [
-  {
-    id: "openai/gpt-oss-20b",
-    label: "OpenAI: gpt-oss-20b (free) - 21B param MoE, 131K context",
-  },
-  {
-    id: "z-ai/glm-4.5-air",
-    label: "Z.AI: GLM 4.5 Air (free) - 35.2B param MoE, 131K context",
-  },
-  {
-    id: "qwen/qwen3-coder",
-    label: "Qwen: Qwen3 Coder (free) - 480B param MoE, 262K context",
-  },
-  {
-    id: "moonshotai/kimi-k2",
-    label: "MoonshotAI: Kimi K2 (free) - 1T param MoE, 33K context",
-  },
-  {
-    id: "cognitivecomputations/venice-uncensored",
-    label: "Venice: Uncensored (free) - Mistral 24B variant, 33K context",
-  },
-  {
-    id: "google/gemma-3n-2b",
-    label: "Google: Gemma 3n 2B (free) - 2B param multimodal, 8K context",
-  },
-  {
-    id: "tencent/hunyuan-a13b-instruct",
-    label: "Tencent: Hunyuan A13B Instruct (free) - 80B param MoE, 33K context",
-  },
-  {
-    id: "tngtech/deepseek-r1t2-chimera",
-    label: "TNG: DeepSeek R1T2 Chimera (free) - 671B param MoE, 164K context",
-  },
-  {
-    id: "mistralai/mistral-small-3.2-24b",
-    label: "Mistral: Mistral Small 3.2 24B (free) - 24B param, 131K context",
-  },
-  {
-    id: "moonshotai/kimi-dev-72b",
-    label: "MoonshotAI: Kimi Dev 72B (free) - 72B param fine-tuned for code",
-  },
+  { id: "openrouter/mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)" },
+  { id: "openai/gpt-4", label: "OpenAI: GPT-4" },
+  { id: "openai/gpt-3.5-turbo", label: "OpenAI: GPT-3.5 Turbo" },
+  { id: "google/gemini-1", label: "Google: Gemini 1 (free)" },
+  { id: "anthropic/claude-v1", label: "Anthropic: Claude v1" },
 ];
 
 export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   const session = useSession();
-  const [apiKey, setApiKey] = useState(session.apiKey ?? "");
+
+  const [openRouterApiKey, setOpenRouterApiKey] = useState(session.openRouterApiKey ?? "");
+  const [openAiApiKey, setOpenAiApiKey] = useState(session.openAiApiKey ?? "");
+  const [googleGeminiApiKey, setGoogleGeminiApiKey] = useState(session.googleGeminiApiKey ?? "");
+  const [anthropicApiKey, setAnthropicApiKey] = useState(session.anthropicApiKey ?? "");
   const [model, setModel] = useState(session.model ?? FREE_MODELS[0].id);
+
   const [validating, setValidating] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);
   const [message, setMessage] = useState<string>("");
 
   const validateKey = async () => {
-    if (!apiKey) {
+    // Determine which API key to validate based on selected model prefix
+    let keyToValidate: string | null = null;
+    if (model.startsWith("openai/")) keyToValidate = openAiApiKey;
+    else if (model.startsWith("google/gemini")) keyToValidate = googleGeminiApiKey;
+    else if (model.startsWith("anthropic/")) keyToValidate = anthropicApiKey;
+    else keyToValidate = openRouterApiKey;
+
+    if (!keyToValidate) {
       setValid(false);
-      setMessage("Please enter your OpenRouter API key.");
+      setMessage("Please enter the API key for the selected model.");
       return;
     }
+
     setValidating(true);
     setValid(null);
     setMessage("");
@@ -75,16 +58,28 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
       const res = await fetch("/api/validate-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey }),
+        body: JSON.stringify({ apiKey: keyToValidate }),
       });
       const data = await res.json();
       if (res.ok && data.ok) {
         setValid(true);
         setMessage("API key validated successfully!");
-        session.setApiKey(apiKey);
+        // Save keys to session context
+        session.setOpenRouterApiKey(openRouterApiKey || null);
+        session.setOpenAiApiKey(openAiApiKey || null);
+        session.setGoogleGeminiApiKey(googleGeminiApiKey || null);
+        session.setAnthropicApiKey(anthropicApiKey || null);
         session.setModel(model);
         toast.success("API key validated!");
-        onValidated(apiKey, model);
+        onValidated(
+          {
+            openRouterApiKey: openRouterApiKey || null,
+            openAiApiKey: openAiApiKey || null,
+            googleGeminiApiKey: googleGeminiApiKey || null,
+            anthropicApiKey: anthropicApiKey || null,
+          },
+          model
+        );
       } else {
         setValid(false);
         setMessage(data.message || "Validation failed.");
@@ -101,24 +96,62 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-background">
-      <div className="max-w-md w-full glass-card elevated">
-        <h2 className="text-2xl font-semibold mb-4 text-center">Enter Your OpenRouter API Key</h2>
-        <div className="mb-4">
-          <Label htmlFor="api-key">OpenRouter API Key</Label>
+      <div className="max-w-md w-full glass-card elevated space-y-4">
+        <h2 className="text-2xl font-semibold text-center">Enter Your API Keys</h2>
+
+        <div>
+          <Label htmlFor="openrouter-api-key">OpenRouter API Key</Label>
           <Input
-            id="api-key"
+            id="openrouter-api-key"
             type="password"
             placeholder="sk-or-..."
-            value={apiKey}
-            onChange={(e) => { setApiKey(e.target.value); setValid(null); setMessage(""); }}
+            value={openRouterApiKey}
+            onChange={(e) => setOpenRouterApiKey(e.target.value)}
             aria-label="OpenRouter API Key"
           />
         </div>
-        <div className="mb-4">
+
+        <div>
+          <Label htmlFor="openai-api-key">OpenAI API Key</Label>
+          <Input
+            id="openai-api-key"
+            type="password"
+            placeholder="sk-..."
+            value={openAiApiKey}
+            onChange={(e) => setOpenAiApiKey(e.target.value)}
+            aria-label="OpenAI API Key"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="google-gemini-api-key">Google Gemini API Key</Label>
+          <Input
+            id="google-gemini-api-key"
+            type="password"
+            placeholder="Your Google Gemini API Key"
+            value={googleGeminiApiKey}
+            onChange={(e) => setGoogleGeminiApiKey(e.target.value)}
+            aria-label="Google Gemini API Key"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="anthropic-api-key">Anthropic Claude API Key</Label>
+          <Input
+            id="anthropic-api-key"
+            type="password"
+            placeholder="Your Anthropic API Key"
+            value={anthropicApiKey}
+            onChange={(e) => setAnthropicApiKey(e.target.value)}
+            aria-label="Anthropic API Key"
+          />
+        </div>
+
+        <div>
           <Label htmlFor="model-select">Select Model</Label>
           <select
             id="model-select"
-            className="w-full rounded-md border border-border bg-background p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full rounded-md border border-border bg-background p-2"
             value={model}
             onChange={(e) => setModel(e.target.value)}
             aria-label="Select AI model"
@@ -130,16 +163,18 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
             ))}
           </select>
         </div>
+
         {message && (
-          <p className={`mb-4 text-center ${valid ? "text-green-600" : "text-red-600"}`}>
+          <p className={`text-center ${valid ? "text-green-600" : "text-red-600"}`}>
             {message}
           </p>
         )}
+
         <Button
           onClick={validateKey}
           disabled={validating}
-          className="w-full transition-colors hover:bg-primary/90 focus:ring-2 focus:ring-primary"
-          aria-label="Validate API key and start research"
+          className="w-full"
+          aria-label="Validate API keys and start research"
         >
           {validating ? "Validating..." : "Validate & Start Research"}
         </Button>
