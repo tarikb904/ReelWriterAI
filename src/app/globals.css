@@ -5,7 +5,7 @@
 /* Design tokens and utilities for a vibrant, polished UI */
 @layer base {
   :root {
-    /* Colors (HSL) */
+    /* Base HSL components */
     --bg-h: 222;
     --bg-s: 20%;
     --bg-l: 98%;
@@ -41,13 +41,40 @@
     --radius-md: 0.75rem;
     --radius-sm: 0.5rem;
 
-    /* Border color variable (used below) */
+    /* Border color base (used below) */
     --border-color: 220 16% 92%;
+
+    /* Map to shadcn tokens (light) */
+    --background: var(--bg-h) var(--bg-s) var(--bg-l);
+    --foreground: var(--foreground-h) var(--foreground-s) var(--foreground-l);
+
+    --primary: var(--primary-h) var(--primary-s) var(--primary-l);
+    --primary-foreground: 0 0% 100%;
+
+    --accent: var(--accent-h) var(--accent-s) var(--accent-l);
+    --accent-foreground: 0 0% 100%;
+
+    --muted: var(--muted-h) var(--muted-s) var(--muted-l);
+    --muted-foreground: 220 9% 36%;
+
+    --secondary: var(--muted);
+    --secondary-foreground: var(--foreground);
+
+    --border: var(--border-color);
+    --input: var(--border-color);
+    --ring: var(--accent);
+
+    --card: var(--bg-h) var(--bg-s) var(--card-l);
+    --card-foreground: var(--foreground-h) var(--foreground-s) var(--card-foreground-l);
+
+    --popover: var(--background);
+    --popover-foreground: var(--foreground);
   }
 
   body {
-    --background: var(--bg-h) var(--bg-s) var(--bg-l);
-    --foreground: var(--foreground-h) var(--foreground-s) var(--foreground-l);
+    /* Use theme tokens for actual painting */
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     @apply antialiased;
     font-synthesis: none;
   }
@@ -66,11 +93,24 @@
     --glass-dark: rgba(0,0,0,0.45);
 
     --border-color: 220 14% 14%;
+
+    /* Map overrides to shadcn tokens (dark) */
+    --background: var(--bg-h) var(--bg-s) var(--bg-l);
+    --foreground: var(--foreground-h) var(--foreground-s) var(--foreground-l);
+
+    --muted: 220 10% 16%;
+    --muted-foreground: 215 15% 72%;
+
+    --secondary: var(--muted);
+    --secondary-foreground: var(--foreground);
+
+    --card: var(--bg-h) var(--bg-s) 8%;
+    --card-foreground: var(--foreground-h) var(--foreground-s) var(--foreground-l);
   }
 
-  /* Ensure all elements use the design border color when a border is applied */
+  /* Ensure borders use the design border color when 'border' utility applied */
   * {
-    border-color: hsl(var(--border-color));
+    border-color: hsl(var(--border));
   }
 }
 
@@ -79,7 +119,7 @@
   .glass-card {
     /* translucent frosted glass */
     background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.55));
-    border: 1px solid hsl(var(--border-color));
+    border: 1px solid hsl(var(--border));
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-radius: var(--radius-lg);
@@ -89,7 +129,7 @@
   /* dark mode glass */
   .dark .glass-card {
     background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-    border: 1px solid hsl(var(--border-color));
+    border: 1px solid hsl(var(--border));
   }
 
   .primary-gradient {
