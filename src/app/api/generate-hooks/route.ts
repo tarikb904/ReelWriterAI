@@ -54,8 +54,8 @@ Begin generating the hooks now:
 
     return NextResponse.json({ hooks });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating hooks:", error);
-    return NextResponse.json({ error: "An internal error occurred while generating hooks." }, { status: 500 });
+    return NextResponse.json({ error: error.message || "An internal error occurred while generating hooks." }, { status: 500 });
   }
 }

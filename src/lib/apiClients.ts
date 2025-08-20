@@ -22,7 +22,6 @@ export async function callOpenAIChatCompletion(apiKey: string, messages: any[], 
 
 export async function callGoogleGeminiChatCompletion(apiKey: string, messages: any[], model: string): Promise<string> {
   // Placeholder: Google Gemini API integration is not publicly available yet.
-  // This function returns a rejected Promise to satisfy the return type.
   return Promise.reject(new Error("Google Gemini API integration not implemented."));
 }
 
