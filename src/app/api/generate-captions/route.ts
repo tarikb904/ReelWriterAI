@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import {
+  callOpenAIChatCompletion,
+  callGoogleGeminiChatCompletion,
+  callAnthropicClaudeChatCompletion,
+  callOpenRouterChatCompletion,
+} from "@/lib/apiClients";
 
 export async function POST(request: Request) {
   const { script, apiKey, model } = await request.json();
@@ -44,26 +50,18 @@ ${script}
 `;
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: "user", content: prompt }]
-      })
-    });
+    let rawContent = "";
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter API Error:", errorText);
-      return NextResponse.json({ error: `Failed to generate captions. API returned: ${errorText}` }, { status: response.status });
+    if (model.startsWith("openai/")) {
+      rawContent = await callOpenAIChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+    } else if (model.startsWith("google/gemini")) {
+      rawContent = await callGoogleGeminiChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+    } else if (model.startsWith("anthropic/")) {
+      rawContent = await callAnthropicClaudeChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
+    } else {
+      // Default to OpenRouter
+      rawContent = await callOpenRouterChatCompletion(apiKey, [{ role: "user", content: prompt }], model);
     }
-
-    const data = await response.json();
-    const rawContent = data.choices[0].message.content;
 
     // Basic parsing of the response based on the expected format
     const sections = rawContent.split(/1️⃣|2️⃣|3️⃣/);
@@ -75,7 +73,7 @@ ${script}
     return NextResponse.json({ instagram, linkedin, youtubeTitles });
 
   } catch (error) {
-    console.error("Error calling OpenRouter API:", error);
+    console.error("Error generating captions:", error);
     return NextResponse.json({ error: "An internal error occurred while generating captions." }, { status: 500 });
   }
 }
