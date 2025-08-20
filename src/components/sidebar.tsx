@@ -18,17 +18,66 @@ import {
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import Logo from "./logo";
+import { useSession } from "@/context/session-context";
 
 const navItems = [
   { href: "/", label: "Research", icon: Search },
   { href: "/history", label: "History", icon: History },
 ];
 
+const FREE_MODELS = [
+  {
+    id: "openai/gpt-oss-20b",
+    label: "OpenAI: gpt-oss-20b (free)",
+  },
+  {
+    id: "z-ai/glm-4.5-air",
+    label: "Z.AI: GLM 4.5 Air (free)",
+  },
+  {
+    id: "qwen/qwen3-coder",
+    label: "Qwen: Qwen3 Coder (free)",
+  },
+  {
+    id: "moonshotai/kimi-k2",
+    label: "MoonshotAI: Kimi K2 (free)",
+  },
+  {
+    id: "cognitivecomputations/venice-uncensored",
+    label: "Venice: Uncensored (free)",
+  },
+  {
+    id: "google/gemma-3n-2b",
+    label: "Google: Gemma 3n 2B (free)",
+  },
+  {
+    id: "tencent/hunyuan-a13b-instruct",
+    label: "Tencent: Hunyuan A13B Instruct (free)",
+  },
+  {
+    id: "tngtech/deepseek-r1t2-chimera",
+    label: "TNG: DeepSeek R1T2 Chimera (free)",
+  },
+  {
+    id: "mistralai/mistral-small-3.2-24b",
+    label: "Mistral: Mistral Small 3.2 24B (free)",
+  },
+  {
+    id: "moonshotai/kimi-dev-72b",
+    label: "MoonshotAI: Kimi Dev 72B (free)",
+  },
+];
+
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const session = useSession();
 
   const toggleMobile = () => setMobileOpen(!mobileOpen);
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    session.setModel(e.target.value);
+  };
 
   return (
     <>
@@ -45,17 +94,29 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-20 w-20 flex-col border-r bg-background/80 backdrop-blur-sm transition-transform sm:flex",
+          "fixed inset-y-0 left-0 z-20 w-24 flex-col border-r bg-background/80 backdrop-blur-sm transition-transform sm:flex",
           mobileOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
         )}
       >
-        <nav className="flex flex-col items-center gap-4 px-3 py-6">
-          <Link href="#" className="flex items-center justify-center">
-            <div className="rounded-full p-2 logo-gradient shadow-md">
-              <Logo size={36} />
-            </div>
-          </Link>
+        <div className="flex flex-col items-center gap-4 px-3 py-4 border-b border-border">
+          <div className="rounded-full p-2 logo-gradient shadow-md">
+            <Logo size={36} />
+          </div>
+          <select
+            aria-label="Select AI model"
+            className="w-full rounded-md border border-border bg-background p-1 text-sm text-foreground"
+            value={session.model || FREE_MODELS[0].id}
+            onChange={handleModelChange}
+          >
+            {FREE_MODELS.map((m) => (
+              <option key={m.id} value={m.id} title={m.label}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
+        <nav className="flex flex-col items-center gap-4 px-3 py-6">
           <TooltipProvider>
             {navItems.map((item) => (
               <Tooltip key={item.href}>
