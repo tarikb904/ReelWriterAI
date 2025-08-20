@@ -21,6 +21,16 @@ export default function Dashboard() {
   const [captions, setCaptions] = useState<any>(null);
   const [model, setModel] = useState(session.model || "mistralai/mistral-7b-instruct:free");
 
+  // Determine the active API key based on model prefix
+  const getActiveApiKey = () => {
+    if (model.startsWith("openai/")) return session.openAiApiKey ?? "";
+    if (model.startsWith("google/gemini")) return session.googleGeminiApiKey ?? "";
+    if (model.startsWith("anthropic/")) return session.anthropicApiKey ?? "";
+    return session.openRouterApiKey ?? "";
+  };
+
+  const activeApiKey = getActiveApiKey();
+
   // Load opened session from sessionStorage on mount
   useEffect(() => {
     const openSessionRaw = sessionStorage.getItem("reelwriter-open-session");
@@ -81,7 +91,6 @@ export default function Dashboard() {
     }
   }, [session]);
 
-  // Updated handler signature to accept all keys and model
   const handleApiKeyValidated = (
     keys: {
       openRouterApiKey: string | null;
@@ -89,7 +98,8 @@ export default function Dashboard() {
       googleGeminiApiKey: string | null;
       anthropicApiKey: string | null;
     },
-    selectedModel: string
+    selectedModel: string,
+    activeKeyType: string
   ) => {
     session.setOpenRouterApiKey(keys.openRouterApiKey);
     session.setOpenAiApiKey(keys.openAiApiKey);
@@ -100,13 +110,8 @@ export default function Dashboard() {
     setStep("research");
   };
 
-  const handleProceedToHooks = (idea: ContentIdea, apiKeyOverride?: string, selectedModel?: string) => {
+  const handleProceedToHooks = (idea: ContentIdea) => {
     setSelectedIdea(idea);
-    if (apiKeyOverride) session.setOpenRouterApiKey(apiKeyOverride);
-    if (selectedModel) {
-      setModel(selectedModel);
-      session.setModel(selectedModel);
-    }
     setStep("hooks");
   };
 
@@ -148,72 +153,42 @@ export default function Dashboard() {
       case "apiKey":
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
       case "research":
-        if (
-          session.openRouterApiKey ||
-          session.openAiApiKey ||
-          session.googleGeminiApiKey ||
-          session.anthropicApiKey
-        ) {
-          // Pass the correct API key based on model prefix
-          let apiKey = "";
-          if (model.startsWith("openai/")) apiKey = session.openAiApiKey ?? "";
-          else if (model.startsWith("google/gemini")) apiKey = session.googleGeminiApiKey ?? "";
-          else if (model.startsWith("anthropic/")) apiKey = session.anthropicApiKey ?? "";
-          else apiKey = session.openRouterApiKey ?? "";
-
-          return <ResearchStep apiKey={apiKey} model={model} onNext={handleProceedToHooks} />;
+        if (activeApiKey) {
+          return <ResearchStep apiKey={activeApiKey} model={model} onNext={handleProceedToHooks} />;
         }
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
       case "hooks":
-        if (selectedIdea) {
-          let apiKey = "";
-          if (model.startsWith("openai/")) apiKey = session.openAiApiKey ?? "";
-          else if (model.startsWith("google/gemini")) apiKey = session.googleGeminiApiKey ?? "";
-          else if (model.startsWith("anthropic/")) apiKey = session.anthropicApiKey ?? "";
-          else apiKey = session.openRouterApiKey ?? "";
-
+        if (selectedIdea && activeApiKey) {
           return (
             <HookStep
               idea={selectedIdea}
-              apiKey={apiKey}
+              apiKey={activeApiKey}
               model={model}
               onNext={handleProceedToScript}
               onBack={handleBackToResearch}
             />
           );
         }
-        return <ResearchStep apiKey="" model={model} onNext={handleProceedToHooks} />;
+        return <ResearchStep apiKey={activeApiKey} model={model} onNext={handleProceedToHooks} />;
       case "script":
-        if (selectedIdea && selectedHook) {
-          let apiKey = "";
-          if (model.startsWith("openai/")) apiKey = session.openAiApiKey ?? "";
-          else if (model.startsWith("google/gemini")) apiKey = session.googleGeminiApiKey ?? "";
-          else if (model.startsWith("anthropic/")) apiKey = session.anthropicApiKey ?? "";
-          else apiKey = session.openRouterApiKey ?? "";
-
+        if (selectedIdea && selectedHook && activeApiKey) {
           return (
             <ScriptStep
               idea={selectedIdea}
               hook={selectedHook}
-              apiKey={apiKey}
+              apiKey={activeApiKey}
               model={model}
               onNext={handleProceedToCaptions}
               onBack={handleBackToHooks}
             />
           );
         }
-        return <HookStep idea={selectedIdea!} apiKey="" model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />;
+        return <HookStep idea={selectedIdea!} apiKey={activeApiKey} model={model} onNext={handleProceedToScript} onBack={handleBackToResearch} />;
       case "captions":
-        if (finalScript) {
-          let apiKey = "";
-          if (model.startsWith("openai/")) apiKey = session.openAiApiKey ?? "";
-          else if (model.startsWith("google/gemini")) apiKey = session.googleGeminiApiKey ?? "";
-          else if (model.startsWith("anthropic/")) apiKey = session.anthropicApiKey ?? "";
-          else apiKey = session.openRouterApiKey ?? "";
-
-          return <CaptionStep script={finalScript} apiKey={apiKey} model={model} onBack={handleBackToScript} />;
+        if (finalScript && activeApiKey) {
+          return <CaptionStep script={finalScript} apiKey={activeApiKey} model={model} onBack={handleBackToScript} />;
         }
-        return <ScriptStep idea={selectedIdea!} hook={selectedHook!} apiKey="" model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />;
+        return <ScriptStep idea={selectedIdea!} hook={selectedHook!} apiKey={activeApiKey} model={model} onNext={handleProceedToCaptions} onBack={handleBackToHooks} />;
       default:
         return <ApiKeyStep onValidated={handleApiKeyValidated} />;
     }
