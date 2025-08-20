@@ -27,6 +27,19 @@ interface ScriptStepProps {
   onBack: () => void;
 }
 
+function cleanScriptText(text: string): string {
+  // Remove lines that are section headers like [HOOK], [INTRODUCTION], etc.
+  // Remove lines that are scene suggestions in parentheses.
+  const lines = text.split("\n");
+  const cleanedLines = lines.filter(line => {
+    const trimmed = line.trim();
+    if (trimmed.match(/^\[.*\]$/)) return false; // Remove lines like [HOOK]
+    if (trimmed.match(/^\(.*\)$/)) return false; // Remove lines like (Show a screenshot)
+    return true;
+  });
+  return cleanedLines.join("\n").trim();
+}
+
 export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: ScriptStepProps) {
   const [script, setScript] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,8 +80,9 @@ export function ScriptStep({ idea, hook, apiKey, model, onNext, onBack }: Script
       }
 
       const data = await response.json();
-      setScript(data.script);
-      await persistScript(data.script);
+      const cleaned = cleanScriptText(data.script);
+      setScript(cleaned);
+      await persistScript(cleaned);
       toast.success("Your script is ready!");
     } catch (error: any) {
       console.error(error);
