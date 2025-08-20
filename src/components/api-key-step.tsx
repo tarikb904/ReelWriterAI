@@ -20,13 +20,13 @@ type ModelItem = { id: string; label: string };
 
 const FALLBACKS: Record<string, ModelItem[]> = {
   openRouterApiKey: [
-    { id: "openrouter/mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)" },
-    { id: "openrouter/z-ai/glm-4.5-air", label: "OpenRouter: GLM 4.5 Air (free)" },
+    { id: "mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)" },
+    { id: "z-ai/glm-4.5-air", label: "OpenRouter: GLM 4.5 Air (free)" },
   ],
   openAiApiKey: [
+    { id: "openai/gpt-5", label: "OpenAI: gpt-5" },
     { id: "openai/gpt-4o", label: "OpenAI: gpt-4o" },
     { id: "openai/gpt-4o-mini", label: "OpenAI: gpt-4o-mini" },
-    { id: "openai/gpt-3.5-turbo", label: "OpenAI: gpt-3.5-turbo" },
   ],
   googleGeminiApiKey: [
     { id: "google/gemini-1.5-pro", label: "Google: Gemini 1.5 Pro" },
@@ -92,7 +92,6 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
       const list: ModelItem[] = Array.isArray(data.models) ? data.models : [];
       if (list.length) {
         setAvailableModels(list);
-        // keep model if still in list, else use first
         setModel((prev) => list.some((m) => m.id === prev) ? prev : list[0].id);
       } else {
         setAvailableModels(FALLBACKS[keyType] || []);
@@ -137,9 +136,7 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
     }
 
     try {
-      // Reuse /api/models as a light validation for fetchability
       await fetchModels(activeKeyType);
-      // Persist to session context
       session.setOpenRouterApiKey(openRouterApiKey || null);
       session.setOpenAiApiKey(openAiApiKey || null);
       session.setGoogleGeminiApiKey(googleGeminiApiKey || null);

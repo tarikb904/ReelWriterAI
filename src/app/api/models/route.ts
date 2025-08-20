@@ -21,9 +21,10 @@ export async function POST(req: Request) {
       const raw = Array.isArray(data.models) ? data.models : (Array.isArray(data.data) ? data.data : []);
       const models = raw
         .map((m: any) => {
+          // OpenRouter expects model ids like "mistralai/mistral-7b-instruct:free" or "openai/gpt-4o"
           const id = typeof m === "string" ? m : (m.id || m.name);
           const label = typeof m === "string" ? m : (m.name || m.id);
-          return id ? { id, label } : null;
+          return id ? { id, label: `OpenRouter: ${label}` } : null;
         })
         .filter(Boolean);
       return NextResponse.json({ models });
@@ -37,12 +38,12 @@ export async function POST(req: Request) {
       });
       if (!res.ok) return NextResponse.json({ models: fallbackOpenAI() });
       const data = await res.json();
+      const deny = ["embedding", "whisper", "tts", "audio", "voice", "image", "vision", "moderation"];
       const models = (data.data || [])
-        .map((m: any) => m.id as string)
+        .map((m: any) => String(m.id))
         .filter((id: string) => {
           const lower = id.toLowerCase();
-          if (lower.includes("embedding") || lower.includes("whisper") || lower.includes("tts") || lower.includes("audio") || lower.includes("moderation")) return false;
-          return lower.startsWith("gpt") || lower.startsWith("o") || lower.includes("4o");
+          return !deny.some(d => lower.includes(d));
         })
         .sort()
         .map((id: string) => ({ id: `openai/${id}`, label: `OpenAI: ${id}` }));
@@ -60,9 +61,9 @@ export async function POST(req: Request) {
         .map((m: any) => {
           const rawName: string = m.name || "";
           const name = rawName.replace(/^models\//, "");
-          return name.includes("gemini") ? { id: `google/${name}`, label: `Google: ${m.displayName || name}` } : null;
-        })
-        .filter(Boolean);
+          const display = m.displayName || name;
+          return { id: `google/${name}`, label: `Google: ${display}` };
+        });
       return NextResponse.json({ models: models.length ? models : fallbackGoogle() });
     }
 
@@ -78,16 +79,15 @@ export async function POST(req: Request) {
       const models = raw
         .map((m: any) => {
           const id = m.id || m.name;
-          return (id && String(id).toLowerCase().startsWith("claude")) ? { id: `anthropic/${id}`, label: `Anthropic: ${id}` } : null;
-        })
-        .filter(Boolean);
+          const name = String(id);
+          return { id: `anthropic/${name}`, label: `Anthropic: ${name}` };
+        });
       return NextResponse.json({ models: models.length ? models : fallbackAnthropic() });
     }
 
     return NextResponse.json({ error: "Unsupported provider" }, { status: 400 });
   } catch (err) {
     console.error("models route error:", err);
-    // Fall back to basic sets
     switch (provider) {
       case "openrouter": return NextResponse.json({ models: fallbackOpenRouter() });
       case "openai": return NextResponse.json({ models: fallbackOpenAI() });
@@ -100,15 +100,16 @@ export async function POST(req: Request) {
 
 function fallbackOpenRouter() {
   return [
-    { id: "openrouter/mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)" },
-    { id: "openrouter/z-ai/glm-4.5-air", label: "OpenRouter: GLM 4.5 Air (free)" },
-    { id: "openrouter/qwen/qwen3-coder", label: "OpenRouter: Qwen3 Coder (free)" },
-    { id: "openrouter/mistralai/mistral-small-3.2-24b", label: "OpenRouter: Mistral Small 3.2 24B (free)" },
+    { id: "mistralai/mistral-7b-instruct:free", label: "OpenRouter: Mistral 7B Instruct (free)" },
+    { id: "z-ai/glm-4.5-air", label: "OpenRouter: GLM 4.5 Air (free)" },
+    { id: "qwen/qwen3-coder", label: "OpenRouter: Qwen3 Coder (free)" },
+    { id: "mistralai/mistral-small-3.2-24b", label: "OpenRouter: Mistral Small 3.2 24B (free)" },
   ];
 }
 
 function fallbackOpenAI() {
   return [
+    { id: "openai/gpt-5", label: "OpenAI: gpt-5" },
     { id: "openai/gpt-4o", label: "OpenAI: gpt-4o" },
     { id: "openai/gpt-4o-mini", label: "OpenAI: gpt-4o-mini" },
     { id: "openai/gpt-3.5-turbo", label: "OpenAI: gpt-3.5-turbo" },
