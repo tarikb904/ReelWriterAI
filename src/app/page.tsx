@@ -10,7 +10,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for auth status in localStorage
     const authStatus = localStorage.getItem("reelwriter-auth") === "true";
     setIsAuthenticated(authStatus);
     setIsLoading(false);

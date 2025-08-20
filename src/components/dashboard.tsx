@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Sidebar } from "./sidebar";
 import { ApiKeyStep } from "./api-key-step";
 import { ResearchStep, type ContentIdea } from "./research-step";
@@ -21,7 +21,7 @@ export default function Dashboard() {
   const [captions, setCaptions] = useState<any>(null);
   const [model, setModel] = useState(session.model || "mistralai/mistral-7b-instruct:free");
 
-  // Determine the active API key based on model prefix and active key type
+  // Determine the active API key based on model prefix
   const getActiveApiKey = () => {
     if (model.startsWith("openai/")) return session.openAiApiKey ?? "";
     if (model.startsWith("google/gemini")) return session.googleGeminiApiKey ?? "";
@@ -31,7 +31,6 @@ export default function Dashboard() {
 
   const activeApiKey = getActiveApiKey();
 
-  // Load opened session from sessionStorage on mount
   useEffect(() => {
     const openSessionRaw = sessionStorage.getItem("reelwriter-open-session");
     if (openSessionRaw) {
@@ -68,7 +67,6 @@ export default function Dashboard() {
           setCaptions(openSession.captions);
         }
 
-        // Determine step based on loaded data
         if (openSession.captions) {
           setStep("captions");
         } else if (openSession.script?.text) {

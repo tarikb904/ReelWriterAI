@@ -45,23 +45,6 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
   const [valid, setValid] = useState<boolean | null>(null);
   const [message, setMessage] = useState<string>("");
 
-  const clearKey = (keyType: string) => {
-    switch (keyType) {
-      case "openRouterApiKey":
-        setOpenRouterApiKey("");
-        break;
-      case "openAiApiKey":
-        setOpenAiApiKey("");
-        break;
-      case "googleGeminiApiKey":
-        setGoogleGeminiApiKey("");
-        break;
-      case "anthropicApiKey":
-        setAnthropicApiKey("");
-        break;
-    }
-  };
-
   const validateKey = async () => {
     let keyToValidate: string | null = null;
     switch (activeKeyType) {
@@ -128,6 +111,23 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
     }
   };
 
+  const clearKey = (keyType: string) => {
+    switch (keyType) {
+      case "openRouterApiKey":
+        setOpenRouterApiKey("");
+        break;
+      case "openAiApiKey":
+        setOpenAiApiKey("");
+        break;
+      case "googleGeminiApiKey":
+        setGoogleGeminiApiKey("");
+        break;
+      case "anthropicApiKey":
+        setAnthropicApiKey("");
+        break;
+    }
+  };
+
   const isValidateDisabled = () => {
     switch (activeKeyType) {
       case "openAiApiKey":
@@ -178,7 +178,7 @@ export function ApiKeyStep({ onValidated }: ApiKeyStepProps) {
                     variant="outline"
                     size="icon"
                     aria-label={`Clear ${label}`}
-                    onClick={() => setter("")}
+                    onClick={() => clearKey(keyType)}
                     className="h-8 w-8"
                   >
                     ×
